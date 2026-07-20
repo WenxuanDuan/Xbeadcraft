@@ -4,3 +4,4 @@ numpy>=1.26
 pandas>=2.2
 scikit-image>=0.24
 reportlab>=4.0
+PySide6>=6.8
