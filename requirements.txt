@@ -1,0 +1,6 @@
+streamlit>=1.36
+pillow>=10.0
+numpy>=1.26
+pandas>=2.2
+scikit-image>=0.24
+reportlab>=4.0
