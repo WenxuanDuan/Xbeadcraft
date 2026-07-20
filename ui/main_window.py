@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QImage, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QFileDialog,
     QFormLayout,
     QFrame,
@@ -34,14 +35,15 @@ PALETTE_PATH = PROJECT_ROOT / "data" / "mard_221.csv"
 
 class MainWindow(QMainWindow):
     """
-    BeadCraft 主窗口。
+    XBeadCraft 主窗口。
 
-    第一版功能：
+    当前支持：
     - 打开图片
-    - 设置图纸宽度
-    - 自动生成 MARD 拼豆图纸
-    - 在窗口中预览
-    - 保存为 PNG
+    - 固定宽度、固定高度、固定最长边
+    - 图鉴模式：按目标拼豆数量统一视觉体量
+    - MARD 色卡自动匹配
+    - 生成完整拼豆图纸
+    - 保存 PNG
     """
 
     def __init__(self) -> None:
@@ -56,7 +58,7 @@ class MainWindow(QMainWindow):
         self.matcher = ColorMatcher(self.palette)
 
         self.setWindowTitle("XBeadCraft")
-        self.resize(1280, 820)
+        self.resize(1320, 860)
 
         self._build_menu()
         self._build_ui()
@@ -109,15 +111,16 @@ class MainWindow(QMainWindow):
     def _create_control_panel(self) -> QWidget:
         panel = QFrame()
         panel.setFrameShape(QFrame.Shape.StyledPanel)
-        panel.setFixedWidth(280)
+        panel.setFixedWidth(310)
 
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(14)
+        layout.setSpacing(13)
 
         title = QLabel("图纸设置")
         title.setStyleSheet(
-            "font-size: 20px; font-weight: 600;"
+            "font-size: 20px;"
+            "font-weight: 600;"
         )
         layout.addWidget(title)
 
@@ -138,11 +141,49 @@ class MainWindow(QMainWindow):
         form = QFormLayout()
         form.setVerticalSpacing(12)
 
-        self.width_spin = QSpinBox()
-        self.width_spin.setRange(4, 200)
-        self.width_spin.setValue(39)
-        self.width_spin.setSuffix(" 颗")
-        form.addRow("图纸宽度：", self.width_spin)
+        self.size_mode_combo = QComboBox()
+        self.size_mode_combo.addItem(
+            "图鉴模式（推荐）",
+            "collection",
+        )
+        self.size_mode_combo.addItem(
+            "固定最长边",
+            "longest",
+        )
+        self.size_mode_combo.addItem(
+            "固定宽度",
+            "width",
+        )
+        self.size_mode_combo.addItem(
+            "固定高度",
+            "height",
+        )
+        self.size_mode_combo.currentIndexChanged.connect(
+            self._update_size_controls
+        )
+        form.addRow("尺寸模式：", self.size_mode_combo)
+
+        self.collection_size_combo = QComboBox()
+        self.collection_size_combo.addItem(
+            "小型图鉴 · 约550颗",
+            550,
+        )
+        self.collection_size_combo.addItem(
+            "标准图鉴 · 约850颗",
+            850,
+        )
+        self.collection_size_combo.addItem(
+            "大型图鉴 · 约1200颗",
+            1200,
+        )
+        self.collection_size_combo.setCurrentIndex(1)
+        form.addRow("图鉴规格：", self.collection_size_combo)
+
+        self.target_size_spin = QSpinBox()
+        self.target_size_spin.setRange(4, 200)
+        self.target_size_spin.setValue(40)
+        self.target_size_spin.setSuffix(" 颗")
+        form.addRow("目标尺寸：", self.target_size_spin)
 
         self.cell_size_spin = QSpinBox()
         self.cell_size_spin.setRange(18, 60)
@@ -179,14 +220,17 @@ class MainWindow(QMainWindow):
         self.coordinate_check.setChecked(True)
         layout.addWidget(self.coordinate_check)
 
-        self.checkerboard_check = QCheckBox("透明区域显示棋盘格")
+        self.checkerboard_check = QCheckBox(
+            "透明区域显示棋盘格"
+        )
         self.checkerboard_check.setChecked(True)
         layout.addWidget(self.checkerboard_check)
 
         generate_button = QPushButton("生成图纸")
         generate_button.setMinimumHeight(42)
         generate_button.setStyleSheet(
-            "font-size: 16px; font-weight: 600;"
+            "font-size: 16px;"
+            "font-weight: 600;"
         )
         generate_button.clicked.connect(self.generate_sheet)
         layout.addWidget(generate_button)
@@ -203,8 +247,12 @@ class MainWindow(QMainWindow):
             f"色卡：MARD\n"
             f"已加载颜色：{len(self.palette)}"
         )
-        palette_info.setStyleSheet("color: #777777;")
+        palette_info.setStyleSheet(
+            "color: #777777;"
+        )
         layout.addWidget(palette_info)
+
+        self._update_size_controls()
 
         return panel
 
@@ -218,7 +266,9 @@ class MainWindow(QMainWindow):
         self.preview_label = QLabel(
             "请选择一张图片，然后点击“生成图纸”。"
         )
-        self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.preview_label.setAlignment(
+            Qt.AlignmentFlag.AlignCenter
+        )
         self.preview_label.setStyleSheet(
             "background: #eeeeee;"
             "color: #777777;"
@@ -241,6 +291,30 @@ class MainWindow(QMainWindow):
         self.setStatusBar(status_bar)
         self.statusBar().showMessage("准备就绪")
 
+    def _update_size_controls(self) -> None:
+        mode = self.size_mode_combo.currentData()
+
+        is_collection = mode == "collection"
+
+        self.collection_size_combo.setEnabled(
+            is_collection
+        )
+        self.target_size_spin.setEnabled(
+            not is_collection
+        )
+
+        if mode == "width":
+            self.target_size_spin.setSuffix(" 颗宽")
+
+        elif mode == "height":
+            self.target_size_spin.setSuffix(" 颗高")
+
+        elif mode == "longest":
+            self.target_size_spin.setSuffix(" 颗最长边")
+
+        else:
+            self.target_size_spin.setSuffix(" 颗")
+
     def open_image(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
@@ -258,6 +332,7 @@ class MainWindow(QMainWindow):
 
         self.source_path = Path(filename)
         self.file_label.setText(self.source_path.name)
+
         self.statusBar().showMessage(
             f"已选择：{self.source_path.name}"
         )
@@ -272,15 +347,37 @@ class MainWindow(QMainWindow):
             return
 
         try:
-            self.statusBar().showMessage("正在生成图纸…")
+            self.statusBar().showMessage(
+                "正在生成图纸…"
+            )
+
+            size_mode = str(
+                self.size_mode_combo.currentData()
+            )
+
+            target_beads_data = (
+                self.collection_size_combo.currentData()
+            )
+
+            target_beads = int(
+                target_beads_data
+                if target_beads_data is not None
+                else 850
+            )
 
             with Image.open(self.source_path) as source:
                 processed = self.processor.process(
                     image=source,
-                    width=self.width_spin.value(),
-                    keep_ratio=self.keep_ratio_check.isChecked(),
+                    width=self.target_size_spin.value(),
+                    keep_ratio=(
+                        self.keep_ratio_check.isChecked()
+                    ),
                     trim=self.trim_check.isChecked(),
                     method="lanczos",
+                    size_mode=size_mode,
+                    height=self.target_size_spin.value(),
+                    target_beads=target_beads,
+                    alpha_threshold=self.alpha_spin.value(),
                 )
 
             pattern = self.matcher.match(
@@ -292,10 +389,18 @@ class MainWindow(QMainWindow):
 
             config = RenderConfig(
                 cell_size=self.cell_size_spin.value(),
-                show_color=self.show_color_check.isChecked(),
-                show_coordinate=self.coordinate_check.isChecked(),
-                major_grid_every=self.major_grid_spin.value(),
-                checkerboard=self.checkerboard_check.isChecked(),
+                show_color=(
+                    self.show_color_check.isChecked()
+                ),
+                show_coordinate=(
+                    self.coordinate_check.isChecked()
+                ),
+                major_grid_every=(
+                    self.major_grid_spin.value()
+                ),
+                checkerboard=(
+                    self.checkerboard_check.isChecked()
+                ),
             )
 
             self.sheet_image = render_sheet(
@@ -308,15 +413,25 @@ class MainWindow(QMainWindow):
             )
 
             self.preview_label.setText("")
-            self.preview_label.setPixmap(self.sheet_pixmap)
-            self.preview_label.resize(self.sheet_pixmap.size())
+            self.preview_label.setPixmap(
+                self.sheet_pixmap
+            )
+            self.preview_label.resize(
+                self.sheet_pixmap.size()
+            )
 
             self.scroll_area.setWidgetResizable(False)
             self.save_button.setEnabled(True)
 
+            mode_label = (
+                self.size_mode_combo.currentText()
+            )
+
             self.statusBar().showMessage(
-                f"生成完成：{pattern.width} × {pattern.height}，"
-                f"{pattern.bead_count} 颗，"
+                f"生成完成｜"
+                f"{mode_label}｜"
+                f"{pattern.width} × {pattern.height}｜"
+                f"{pattern.bead_count} 颗｜"
                 f"{pattern.color_count} 种颜色"
             )
 
@@ -326,7 +441,9 @@ class MainWindow(QMainWindow):
                 "生成失败",
                 str(exc),
             )
-            self.statusBar().showMessage("生成失败")
+            self.statusBar().showMessage(
+                "生成失败"
+            )
 
     def save_sheet(self) -> None:
         if self.sheet_image is None:
@@ -341,7 +458,8 @@ class MainWindow(QMainWindow):
 
         if self.source_path is not None:
             default_name = (
-                f"{self.source_path.stem}_bead_pattern.png"
+                f"{self.source_path.stem}"
+                "_bead_pattern.png"
             )
 
         filename, _ = QFileDialog.getSaveFileName(
@@ -357,7 +475,9 @@ class MainWindow(QMainWindow):
         output_path = Path(filename)
 
         if output_path.suffix.lower() != ".png":
-            output_path = output_path.with_suffix(".png")
+            output_path = output_path.with_suffix(
+                ".png"
+            )
 
         try:
             self.sheet_image.save(
@@ -372,7 +492,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(
                 self,
                 "保存成功",
-                f"图纸已经保存到：\n{output_path}",
+                f"图纸已经保存到：\n"
+                f"{output_path}",
             )
 
         except Exception as exc:
@@ -383,16 +504,14 @@ class MainWindow(QMainWindow):
             )
 
     @staticmethod
-    def _pil_to_pixmap(image: Image.Image) -> QPixmap:
-        """
-        将 PIL 图片转换为 Qt QPixmap。
-
-        必须调用 copy()，否则 QImage 可能继续引用
-        已被 Python 回收的临时字节数据。
-        """
-
+    def _pil_to_pixmap(
+        image: Image.Image,
+    ) -> QPixmap:
         rgba = image.convert("RGBA")
-        raw_data = rgba.tobytes("raw", "RGBA")
+        raw_data = rgba.tobytes(
+            "raw",
+            "RGBA",
+        )
 
         qimage = QImage(
             raw_data,

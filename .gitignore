@@ -1,6 +1,6 @@
 # Python
 __pycache__/
-*.py[cod]
+*.pyc
 *.pyo
 
 # Virtual environments
@@ -27,6 +27,7 @@ dist/
 
 # Test Files
 examples/
+test.py
 
 #Outputs
 output/
