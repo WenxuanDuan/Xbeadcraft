@@ -1,0 +1,524 @@
+[
+  {
+    "id": "mard_221",
+    "file": "mard_221.csv",
+    "name_zh": "MARD 221 · 原版",
+    "name_en": "MARD 221 · Original",
+    "count": 221,
+    "reference": "existing",
+    "source": "https://www.pixel-beads.com/zh/mard-bead-color-chart",
+    "excluded": []
+  },
+  {
+    "id": "mard-291-github",
+    "file": "palettes/mard-291-github.csv",
+    "name_zh": "MARD 291",
+    "name_en": "MARD 291",
+    "count": 291,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/mard-291-github/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "baa8e0a4a414cb45dfb62859ac2a4a8ec23a887498fdf8405d2ec96c90148455",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://git.xiongxiao.me/abearxiong/get-colors-from-beans/src/branch/main/get-colors.json",
+        "quality": "third_party_public_repository",
+        "notes": "Extracted from public HTML color data repository."
+      }
+    ],
+    "excluded": []
+  },
+  {
+    "id": "coco-291",
+    "file": "palettes/coco-291.csv",
+    "name_zh": "COCO 291",
+    "name_en": "COCO 291",
+    "count": 291,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/coco-291/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "46336ae0b4bd267041f49d339c459edc938af33b2370846c0245dff7e0b504a0",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://git.xiongxiao.me/abearxiong/get-colors-from-beans/src/branch/main/get-colors.json",
+        "quality": "third_party_public_repository",
+        "notes": "Extracted from public HTML color data repository."
+      }
+    ],
+    "excluded": []
+  },
+  {
+    "id": "manman-278",
+    "file": "palettes/manman-278.csv",
+    "name_zh": "漫漫",
+    "name_en": "Manman",
+    "count": 278,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/manman-278/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "cfa0823b2114e196c90f2a54d428a7af5354634cad2ccb390a873ba6b9ffce71",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://git.xiongxiao.me/abearxiong/get-colors-from-beans/src/branch/main/get-colors.json",
+        "quality": "third_party_public_repository",
+        "notes": "Extracted from public HTML color data repository."
+      }
+    ],
+    "excluded": []
+  },
+  {
+    "id": "panpan-289",
+    "file": "palettes/panpan-289.csv",
+    "name_zh": "盼盼",
+    "name_en": "Panpan",
+    "count": 285,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/panpan-289/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "853168b6a78527fffeeb58d1dc4fab79c999c2a029c92dd05b9167898f43c105",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://git.xiongxiao.me/abearxiong/get-colors-from-beans/src/branch/main/get-colors.json",
+        "quality": "third_party_public_repository",
+        "notes": "Extracted from public HTML color data repository."
+      }
+    ],
+    "excluded": [
+      {
+        "code": "UNKNOWN-01",
+        "reason": "unidentified_code"
+      },
+      {
+        "code": "UNKNOWN-02",
+        "reason": "unidentified_code"
+      },
+      {
+        "code": "UNKNOWN-03",
+        "reason": "unidentified_code"
+      },
+      {
+        "code": "UNKNOWN-04",
+        "reason": "unidentified_code"
+      }
+    ]
+  },
+  {
+    "id": "mixiaowo-290",
+    "file": "palettes/mixiaowo-290.csv",
+    "name_zh": "咪小窝",
+    "name_en": "Mixiaowo",
+    "count": 286,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/mixiaowo-290/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "1a6c19b8a0e433f98fd1ddbafede344b96469ecb15153bcba388ea06cc4ffbe0",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://git.xiongxiao.me/abearxiong/get-colors-from-beans/src/branch/main/get-colors.json",
+        "quality": "third_party_public_repository",
+        "notes": "Extracted from public HTML color data repository."
+      }
+    ],
+    "excluded": [
+      {
+        "code": "UNKNOWN-01",
+        "reason": "unidentified_code"
+      },
+      {
+        "code": "UNKNOWN-02",
+        "reason": "unidentified_code"
+      },
+      {
+        "code": "UNKNOWN-03",
+        "reason": "unidentified_code"
+      },
+      {
+        "code": "UNKNOWN-04",
+        "reason": "unidentified_code"
+      }
+    ]
+  },
+  {
+    "id": "artkal-c-197-official",
+    "file": "palettes/artkal-c-197-official.csv",
+    "name_zh": "Artkal / 优肯 C · 2.6 mm",
+    "name_en": "Artkal C · 2.6 mm",
+    "count": 188,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/artkal-c-197-official/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "8a5dbc16187a73e3266718d24d7c95da5a38437567e93e021ab3eb778a704a61",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/C_MINI_Beads_RGB_Color_Chart_2024.pdf?v=1744700289",
+        "quality": "official_pdf",
+        "notes": "Extracted from official Artkal RGB PDF."
+      },
+      {
+        "id": "src2",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/artkal_beads_C_series_color_chart.jpg?v=1744700233",
+        "quality": "official_chart_image",
+        "notes": "Official 197-color chart image shows this RGB; the official RGB PDF labels this color as Silver without numeric RGB."
+      },
+      {
+        "id": "src3",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/artkal_beads_C_series_color_chart.jpg?v=1744700233",
+        "quality": "official_chart_image",
+        "notes": "Official RGB PDF text renders/extracts B as 273; official 197-color chart image shows this RGB."
+      },
+      {
+        "id": "src4",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/artkal_beads_C_series_color_chart.jpg?v=1744700233",
+        "quality": "official_chart_image_sampled",
+        "notes": "Reference RGB sampled from visible swatches in the official Artkal C-series color chart image; these CG/CP/CT special-material values are not published in the official RGB PDF."
+      }
+    ],
+    "excluded": [
+      {
+        "code": "CT01",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT02",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT03",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT04",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT05",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT06",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT07",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT08",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT09",
+        "reason": "transparent_material"
+      }
+    ]
+  },
+  {
+    "id": "artkal-m-221-official",
+    "file": "palettes/artkal-m-221-official.csv",
+    "name_zh": "Artkal / 优肯 M · 2.6 mm",
+    "name_en": "Artkal M · 2.6 mm",
+    "count": 220,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/artkal-m-221-official/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "82a6f68b121741b2721ea0f7b1e2a5bcc03aa64c2d2e50d755d17a4a6700c17b",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/M_MINI_Beads_RGB_Color_Chart_2025.pdf?v=1760661747",
+        "quality": "official_pdf",
+        "notes": "Extracted from official Artkal RGB PDF."
+      },
+      {
+        "id": "src2",
+        "url": "https://bitbead.pomodiary.com/zh/colors/artkal-mini/MH1",
+        "quality": "public_tool_display_hex",
+        "notes": "Bitbead displays Artkal Mini MH1 Transparent as #FFFFFF; Artkal official RGB PDF labels MH1 as Transparent without numeric RGB, so this is a display placeholder, not an official numeric physical color."
+      }
+    ],
+    "excluded": [
+      {
+        "code": "MH1",
+        "reason": "transparent_material"
+      }
+    ]
+  },
+  {
+    "id": "artkal-c197-m221-418-official",
+    "file": "palettes/artkal-c197-m221-418-official.csv",
+    "name_zh": "Artkal / 优肯 C+M · 2.6 mm",
+    "name_en": "Artkal C+M · 2.6 mm",
+    "count": 408,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/HansBug/pindou-color-data/178dafbc9e77d3de556550dbd058270200129186/artkal-c197-m221-418-official/colors.json",
+    "repository": "HansBug/pindou-color-data",
+    "commit": "178dafbc9e77d3de556550dbd058270200129186",
+    "source_sha256": "db561aacc2ca3481b3afe80dd3e9fae6d6658906b4b762cc21c5b5a94d42d060",
+    "license": "licenses/pindou-MIT.txt",
+    "upstream_sources": [
+      {
+        "id": "src1",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/C_MINI_Beads_RGB_Color_Chart_2024.pdf?v=1744700289",
+        "quality": "official_pdf",
+        "notes": "Extracted from official Artkal RGB PDF."
+      },
+      {
+        "id": "src2",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/artkal_beads_C_series_color_chart.jpg?v=1744700233",
+        "quality": "official_chart_image",
+        "notes": "Official 197-color chart image shows this RGB; the official RGB PDF labels this color as Silver without numeric RGB."
+      },
+      {
+        "id": "src3",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/artkal_beads_C_series_color_chart.jpg?v=1744700233",
+        "quality": "official_chart_image",
+        "notes": "Official RGB PDF text renders/extracts B as 273; official 197-color chart image shows this RGB."
+      },
+      {
+        "id": "src4",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/artkal_beads_C_series_color_chart.jpg?v=1744700233",
+        "quality": "official_chart_image_sampled",
+        "notes": "Reference RGB sampled from visible swatches in the official Artkal C-series color chart image; these CG/CP/CT special-material values are not published in the official RGB PDF."
+      },
+      {
+        "id": "src5",
+        "url": "https://cdn.shopify.com/s/files/1/1323/8195/files/M_MINI_Beads_RGB_Color_Chart_2025.pdf?v=1760661747",
+        "quality": "official_pdf",
+        "notes": "Extracted from official Artkal RGB PDF."
+      },
+      {
+        "id": "src6",
+        "url": "https://bitbead.pomodiary.com/zh/colors/artkal-mini/MH1",
+        "quality": "public_tool_display_hex",
+        "notes": "Bitbead displays Artkal Mini MH1 Transparent as #FFFFFF; Artkal official RGB PDF labels MH1 as Transparent without numeric RGB, so this is a display placeholder, not an official numeric physical color."
+      }
+    ],
+    "excluded": [
+      {
+        "code": "CT01",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT02",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT03",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT04",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT05",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT06",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT07",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT08",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "CT09",
+        "reason": "transparent_material"
+      },
+      {
+        "code": "MH1",
+        "reason": "transparent_material"
+      }
+    ]
+  },
+  {
+    "id": "artkal_a",
+    "file": "palettes/artkal_a.csv",
+    "name_zh": "Artkal / 优肯 A · 2.6 mm",
+    "name_en": "Artkal A · 2.6 mm",
+    "count": 145,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/artkal_a.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "2787b18315d05c47b61883dc903328aa45ff0c3cac2dc28016b7378881657893",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "artkal_r",
+    "file": "palettes/artkal_r.csv",
+    "name_zh": "Artkal / 优肯 R · 5 mm",
+    "name_en": "Artkal R · 5 mm",
+    "count": 89,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/artkal_r.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "e83ec0089d1b360425548f8dbb58bb32e9286b722d87088810cb90d6cc545ae8",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "artkal_s",
+    "file": "palettes/artkal_s.csv",
+    "name_zh": "Artkal / 优肯 S · 5 mm",
+    "name_en": "Artkal S · 5 mm",
+    "count": 199,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/artkal_s.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "490d0994e7657e24f3efaab6af47b5beefe0f50ef188f29f0ef132f9534ab4a1",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "perler",
+    "file": "palettes/perler.csv",
+    "name_zh": "Perler · Midi",
+    "name_en": "Perler · Midi",
+    "count": 103,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/perler.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "757aae3e0553ed3a74db691cf930ea3e27eed47d038c5cc74bcef71acf3d24d0",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "perler_mini",
+    "file": "palettes/perler_mini.csv",
+    "name_zh": "Perler · Mini",
+    "name_en": "Perler · Mini",
+    "count": 41,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/perler_mini.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "5449068ebcc13101337965139186568bd19d88b6685dfc690b88faeb8b4fd5f6",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "perler_caps",
+    "file": "palettes/perler_caps.csv",
+    "name_zh": "Perler · Caps",
+    "name_en": "Perler · Caps",
+    "count": 26,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/perler_caps.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "78d558dc3cb166920fabe947ce8c5d17a2dfa08c1ef39a6bfebc2ec94618bd54",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "hama",
+    "file": "palettes/hama.csv",
+    "name_zh": "Hama · Midi",
+    "name_en": "Hama · Midi",
+    "count": 92,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/hama.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "878ba9aa8bfb9da57b99dd4f524d757b8e165bd9d14fdb0e59831a5cbbb9c5de",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "hama_mini",
+    "file": "palettes/hama_mini.csv",
+    "name_zh": "Hama · Mini",
+    "name_en": "Hama · Mini",
+    "count": 78,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/hama_mini.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "80c974402b112801ae9db14247553bb8664967daf36a416c00c82b470436fae9",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "hama_maxi",
+    "file": "palettes/hama_maxi.csv",
+    "name_zh": "Hama · Maxi",
+    "name_en": "Hama · Maxi",
+    "count": 25,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/hama_maxi.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "bb825a21b56ba0b73449f9c8e130370efba7c820bc2a306e34523a770f5988c5",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "nabbi",
+    "file": "palettes/nabbi.csv",
+    "name_zh": "Nabbi",
+    "name_en": "Nabbi",
+    "count": 30,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/nabbi.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "48d317885f7cd6f3c05b20d4d595b51f3194abcaea540acf2f5786b935ffc4e2",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  },
+  {
+    "id": "yant",
+    "file": "palettes/yant.csv",
+    "name_zh": "Yant",
+    "name_en": "Yant",
+    "count": 119,
+    "reference": "community",
+    "source": "https://raw.githubusercontent.com/maxcleme/beadcolors/f97ff4283d03cef5cd7e1071a86f5892e0c0c61b/raw/yant.csv",
+    "repository": "maxcleme/beadcolors",
+    "commit": "f97ff4283d03cef5cd7e1071a86f5892e0c0c61b",
+    "source_sha256": "42a337e9d9f050db55df2aa0aa7cd33b180ac6d812c11f8594395afbf41a233d",
+    "license": "licenses/beadcolors-MIT.txt",
+    "upstream_sources": [],
+    "excluded": []
+  }
+]

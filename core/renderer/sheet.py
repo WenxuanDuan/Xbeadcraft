@@ -75,6 +75,12 @@ def _draw_title(
         font=info_font,
     )
 
+    palette_text = pattern.palette.display_name(language)
+    palette_font = _load_font(10)
+    while len(palette_text) > 1 and draw.textlength(palette_text, font=palette_font) > width:
+        palette_text = palette_text[:-2] + "…"
+    draw.text((x, y + 54), palette_text, fill=(90, 90, 90), font=palette_font)
+
     draw.line(
         (
             x,

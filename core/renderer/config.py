@@ -38,5 +38,5 @@ class RenderConfig:
     # count: descending usage; series: ascending series and numeric color code
     legend_sort: str = "count"
 
-    # Language used for sheet metadata; MARD codes remain unchanged.
+    # Language used for sheet metadata; palette codes remain unchanged.
     language: str = "en"

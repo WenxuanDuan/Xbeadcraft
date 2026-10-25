@@ -31,9 +31,9 @@ def render_legend(
     pattern: Pattern,
     row_height: int = 44,
     width: int = 460,
-    title: str = "MARD Color Legend",
+    title: str = "Color Legend",
 ) -> Image.Image:
-    """Render legend rows with numbers, swatches, MARD codes, HEX values, and counts."""
+    """Render legend rows with numbers, swatches, palette codes, HEX values, and counts."""
 
     legend_table = pattern.legend_table()
 
@@ -109,7 +109,7 @@ def render_legend(
 
     draw.text(
         (code_x, header_top + 10),
-        "MARD色号",
+        "色号",
         fill="black",
         font=header_font,
     )
@@ -194,7 +194,7 @@ def render_legend(
             width=1,
         )
 
-        # MARD color code
+        # Palette color code
         draw.text(
             (code_x, text_y),
             code,

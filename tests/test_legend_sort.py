@@ -47,7 +47,7 @@ class LegendSortTests(unittest.TestCase):
         self.assertEqual(self.chips('series'), [])
 
     def test_ui_sort_export_edit_mirror_and_failure(self):
-        window = MainWindow(language="zh")
+        window = MainWindow(language="zh", palette_id="mard_221")
         self.addCleanup(window.close)
         window.pattern = self.pattern
         window.render_config = RenderConfig()

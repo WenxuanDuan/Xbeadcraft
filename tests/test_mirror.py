@@ -59,7 +59,7 @@ class MirrorTests(unittest.TestCase):
         np.testing.assert_array_equal(self.pattern.grid, [[0, 1, -1, 2], [2, -1, 1, 0]])
 
     def test_ui_toggle_export_regenerate_and_failure(self):
-        window = MainWindow(language="zh")
+        window = MainWindow(language="zh", palette_id="mard_221")
         self.addCleanup(window.close)
         self.assertFalse(window.mirror_check.isEnabled())
         with tempfile.TemporaryDirectory() as directory:

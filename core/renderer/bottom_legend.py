@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import re
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -65,7 +64,7 @@ def _build_chips(
     chip_height: int,
     sort_mode: str = "count",
 ) -> list[LegendChip]:
-    """Build adaptive-width color chips and sort by usage or MARD series."""
+    """Build adaptive-width color chips and sort by usage or palette series."""
 
     table = pattern.legend_table()
 
@@ -119,12 +118,7 @@ def _build_chips(
         )
 
     def series_key(chip: LegendChip):
-        color = pattern.palette[chip.palette_index]
-        match = re.fullmatch(r"([A-Za-z]+)([0-9]+)", chip.code.strip())
-        series = str(color.series).strip().upper()
-        if match:
-            return (series or match[1].upper(), int(match[2]), chip.code)
-        return (series, 0, chip.code)
+        return pattern.palette.color_sort_key(chip.palette_index)
 
     if sort_mode == "series":
         chips.sort(key=series_key)
@@ -209,7 +203,7 @@ def _draw_chip(
     height: int,
     font: ImageFont.ImageFont,
 ) -> None:
-    """Draw a legend chip with a color swatch, MARD code, and bead count."""
+    """Draw a legend chip with a color swatch, palette code, and bead count."""
 
     border_color = (210, 210, 210)
     background_color = (249, 249, 249)

@@ -79,7 +79,7 @@ def render_grid(
     pattern: Pattern,
     config: RenderConfig,
 ) -> Image.Image:
-    """Render bead backgrounds, upright MARD codes, grid lines, and optional coordinates.
+    """Render bead backgrounds, upright palette codes, grid lines, and optional coordinates.
 
     Horizontal mirroring changes bead positions without reversing text."""
 
@@ -134,9 +134,10 @@ def render_grid(
     grid_top = coordinate_margin
 
     # =========================
-    # Cell backgrounds and MARD codes
+    # Cell backgrounds and palette codes
     # =========================
 
+    code_fonts = {}
     for y in range(height):
         for x in range(width):
             x0 = grid_left + x * cell_size
@@ -185,11 +186,21 @@ def render_grid(
                 fill_color
             )
 
+            # Long SKU-style codes must fit within one bead cell.
+            if bead_color.code not in code_fonts:
+                code_font = cell_font
+                font_size = cell_font_size
+                while font_size > 4 and draw.textlength(bead_color.code, font=code_font) > cell_size - 4:
+                    font_size -= 1
+                    code_font = _load_font(font_size)
+                code_fonts[bead_color.code] = code_font
+            code_font = code_fonts[bead_color.code]
+
             _center_text(
                 draw=draw,
                 box=(x0, y0, x1, y1),
                 text=bead_color.code,
-                font=cell_font,
+                font=code_font,
                 fill=text_color,
             )
 

@@ -4,7 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import Qt, QRect, QSettings, QTranslator, QLibraryInfo
+from PySide6.QtCore import Qt, QRect, QSettings, QTranslator, QLibraryInfo, QStandardPaths
 from PySide6.QtGui import QAction, QColor, QIcon, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 from core.color_matcher import ColorMatcher
 from core.image_processor import ImageProcessor
 from core.palette import Palette
+from core.palette_library import PaletteLibrary
 from core.pattern import Pattern
 from core.renderer import RenderConfig, render_sheet
 from core.i18n import translate, translate_error
@@ -65,7 +66,8 @@ class PatternPreview(QLabel):
 class MainWindow(QMainWindow):
     """Main desktop window for XXBeadPattern: generation, editing, and PNG export."""
 
-    def __init__(self, language: str | None = None, settings: QSettings | None = None) -> None:
+    def __init__(self, language: str | None = None, settings: QSettings | None = None,
+                 palette_directory: Path | None = None, palette_id: str | None = None) -> None:
         super().__init__()
         self.settings = settings if settings is not None else QSettings("XXBeadPattern", "XXBeadPattern")
         saved_language = language if language is not None else self.settings.value("language", "zh")
@@ -75,13 +77,18 @@ class MainWindow(QMainWindow):
         self._qt_translator = None
 
         self.selected_cells: set[tuple[int, int]] = set()
-        self.edit_history: list[dict[tuple[int, int], int]] = []
+        self.edit_history: list[dict[tuple[int, int], int] | Pattern] = []
         self.pattern: Pattern | None = None
         self.render_config: RenderConfig | None = None
         self.source_path: Path | None = None
         self.sheet_image: Image.Image | None = None
         self.sheet_pixmap: QPixmap | None = None
 
+        user_palettes = palette_directory if palette_directory is not None else Path(
+            QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
+        ) / "palettes"
+        self.palette_library = PaletteLibrary(PROJECT_ROOT / "data", user_palettes)
+        self._initial_palette_id = palette_id
         self.palette = self._load_palette()
         self.processor = ImageProcessor()
         self.matcher = ColorMatcher(self.palette)
@@ -140,7 +147,7 @@ class MainWindow(QMainWindow):
         self.major_grid_spin.setSuffix(self._tr(" 格"))
         self._update_size_controls()
         self._update_selection()
-        self.palette_info.setText(self._tr("色卡：MARD\n已加载颜色：{count}", count=len(self.palette)))
+        self._refresh_palette_controls(rebuild_colors=False)
         if self.pattern is not None:
             self._refresh_source_colors(self.pattern)
         if self.sheet_image is None:
@@ -175,7 +182,82 @@ class MainWindow(QMainWindow):
                 self._tr('找不到 MARD 色卡文件：\n{value0}\n\n请将色卡保存为 data/mard_221.csv。', value0=PALETTE_PATH)
             )
 
-        return Palette(str(PALETTE_PATH))
+        selected = self._initial_palette_id or self.settings.value("palette", "mard_221")
+        spec = self.palette_library.specs.get(selected, self.palette_library.specs["mard_221"])
+        try:
+            return spec.load()
+        except (ValueError, OSError):
+            return self.palette_library.specs["mard_221"].load()
+
+    def _refresh_palette_controls(self, rebuild_colors: bool = True) -> None:
+        self.palette_combo.blockSignals(True)
+        self.palette_combo.clear()
+        for spec in self.palette_library.specs.values():
+            self.palette_combo.addItem(self._tr("{name} · {count} 色", name=spec.label(self.language), count=spec.count), spec.id)
+        self.palette_combo.setCurrentIndex(self.palette_combo.findData(self.palette.id))
+        self.palette_combo.blockSignals(False)
+        name = self.palette.display_name(self.language)
+        self.target_color_label.setText(self._tr("替换颜色（{name}）：", name=name))
+        self.palette_info.setText(self._tr("色卡：{name}\n已加载颜色：{count}", name=name, count=len(self.palette)))
+        reference_text = {
+            "community": "社区参考数据；色数为本版本可用色，来源与排除项见 README。",
+            "existing": "保留项目原版 MARD 221 数据。",
+            "custom": "用户导入色卡，颜色数据来自导入文件。",
+        }.get(self.palette.reference, "社区参考数据；色数为本版本可用色，来源与排除项见 README。")
+        self.palette_note.setText(self._tr(reference_text) + "\n" + self._tr(
+            "切换色卡会按当前图案重新配色，可撤销；不同品牌色号不通用。"
+        ))
+        self.palette_combo.setToolTip(self.palette.source)
+        if rebuild_colors:
+            self.color_combo.clear()
+            for index, color in enumerate(self.palette.colors):
+                swatch = QPixmap(20, 20)
+                swatch.fill(QColor(*color.rgb))
+                self.color_combo.addItem(QIcon(swatch), color.code, index)
+        self.color_combo.setEnabled(self.pattern is not None)
+
+    def _change_palette(self) -> None:
+        selected = self.palette_combo.currentData()
+        if selected is None or selected == self.palette.id:
+            return
+        try:
+            palette = self.palette_library.specs[selected].load()
+            matcher = ColorMatcher(palette)
+            previous = self.pattern
+            if previous is not None:
+                # Match current edited colors, preserving the grid size and empty cells.
+                candidate = matcher.match(Image.fromarray(previous.rgb_image()), alpha_threshold=1)
+                candidate.title = getattr(previous, "title", "")
+                self._display_sheet(candidate, self.render_config)
+                self.pattern = candidate
+            self.palette = palette
+            self.matcher = matcher
+            if previous is not None:
+                self.edit_history.append(previous)
+                self.undo_button.setEnabled(True)
+            self._refresh_palette_controls()
+            self._update_selection()
+            self.settings.setValue("palette", selected)
+            self.statusBar().showMessage(self._tr("已切换色卡：{name}", name=palette.display_name(self.language)))
+        except Exception as exc:
+            self.palette_combo.blockSignals(True)
+            self.palette_combo.setCurrentIndex(self.palette_combo.findData(self.palette.id))
+            self.palette_combo.blockSignals(False)
+            QMessageBox.critical(self, self._tr("色卡切换失败"), translate_error(self.language, str(exc)))
+
+    def import_palette(self) -> None:
+        filename, _ = QFileDialog.getOpenFileName(
+            self, self._tr("导入色卡"), str(PROJECT_ROOT), self._tr("色卡 CSV (*.csv)"),
+            options=QFileDialog.Option.DontUseNativeDialog,
+        )
+        if not filename:
+            return
+        try:
+            spec = self.palette_library.import_csv(Path(filename))
+            self._refresh_palette_controls(rebuild_colors=False)
+            self.palette_combo.setCurrentIndex(self.palette_combo.findData(spec.id))
+        except Exception as exc:
+            QMessageBox.critical(self, self._tr("色卡导入失败"), translate_error(self.language, str(exc)))
 
     def _build_menu(self) -> None:
         file_menu = self._add_menu(self.menuBar(), '文件')
@@ -256,6 +338,17 @@ class MainWindow(QMainWindow):
         self.language_combo.currentIndexChanged.connect(self._change_language)
         language_row.addWidget(self.language_combo)
         layout.addLayout(language_row)
+
+        layout.addWidget(self._text_widget(QLabel, "拼豆色卡："))
+        self.palette_combo = QComboBox()
+        layout.addWidget(self.palette_combo)
+        self.import_palette_button = self._text_widget(QPushButton, "导入色卡 CSV…")
+        self.import_palette_button.clicked.connect(self.import_palette)
+        layout.addWidget(self.import_palette_button)
+        self.palette_note = QLabel()
+        self.palette_note.setWordWrap(True)
+        layout.addWidget(self.palette_note)
+        self.palette_combo.currentIndexChanged.connect(self._change_palette)
 
         form = QFormLayout()
         self.size_form = form
@@ -365,7 +458,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._text_widget(QLabel, '图例排序：'))
         self.legend_sort_combo = QComboBox()
         self._add_item(self.legend_sort_combo, '豆子数量：从多到少', "count")
-        self._add_item(self.legend_sort_combo, '颜色系列：A–M（色号升序）', "series")
+        self._add_item(self.legend_sort_combo, '颜色系列／色号升序', "series")
         self.legend_sort_combo.currentIndexChanged.connect(self._change_legend_sort)
         layout.addWidget(self.legend_sort_combo)
 
@@ -400,7 +493,9 @@ class MainWindow(QMainWindow):
             swatch.fill(QColor(*color.rgb))
             self.color_combo.addItem(QIcon(swatch), color.code, index)
         self.color_combo.setEnabled(False)
-        layout.addWidget(self._text_widget(QLabel, '替换颜色（MARD 221）：'))
+        self.target_color_label = QLabel()
+        self.target_color_label.setWordWrap(True)
+        layout.addWidget(self.target_color_label)
         layout.addWidget(self.color_combo)
 
         self.replace_button = self._text_widget(QPushButton, '替换选中像素')
@@ -413,16 +508,14 @@ class MainWindow(QMainWindow):
         self.clear_selection_button.clicked.connect(self._clear_selection)
         layout.addWidget(self.clear_selection_button)
 
-        self.undo_button = self._text_widget(QPushButton, '撤销换色')
+        self.undo_button = self._text_widget(QPushButton, "撤销修改")
         self.undo_button.setEnabled(False)
         self.undo_button.clicked.connect(self.undo_color_edit)
         layout.addWidget(self.undo_button)
 
         layout.addStretch()
 
-        self.palette_info = palette_info = QLabel(
-            self._tr('色卡：MARD\n已加载颜色：{value0}', value0=len(self.palette))
-        )
+        self.palette_info = palette_info = QLabel()
         palette_info.setStyleSheet(
             "color: #777777;"
         )
@@ -434,6 +527,7 @@ class MainWindow(QMainWindow):
         self.photo_height_spin.valueChanged.connect(self._update_photo_estimate)
         self.trim_check.toggled.connect(self._update_photo_estimate)
         self.alpha_spin.valueChanged.connect(self._update_photo_estimate)
+        self._refresh_palette_controls()
         self._update_size_controls()
 
         return panel
@@ -827,7 +921,23 @@ class MainWindow(QMainWindow):
     def undo_color_edit(self) -> None:
         if self.pattern is None or not self.edit_history:
             return
-        if self._apply_cell_colors(self.edit_history[-1]):
+        previous = self.edit_history[-1]
+        if isinstance(previous, Pattern):
+            try:
+                self._display_sheet(previous, self.render_config)
+            except Exception as exc:
+                QMessageBox.critical(self, self._tr("撤销失败"), translate_error(self.language, str(exc)))
+                return
+            self.pattern = previous
+            self.palette = previous.palette
+            self.matcher = ColorMatcher(self.palette)
+            self._refresh_palette_controls()
+            self._update_selection()
+            self.settings.setValue("palette", self.palette.id)
+            self.edit_history.pop()
+            self.undo_button.setEnabled(bool(self.edit_history))
+            self.statusBar().showMessage(self._tr("已恢复色卡：{name}", name=self.palette.display_name(self.language)))
+        elif self._apply_cell_colors(previous):
             self.edit_history.pop()
             self.undo_button.setEnabled(bool(self.edit_history))
 

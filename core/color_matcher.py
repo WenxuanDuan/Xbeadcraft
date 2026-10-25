@@ -9,7 +9,7 @@ from .pattern import Pattern
 
 
 class ColorMatcher:
-    """Match visible RGBA pixels to the closest MARD palette colors in Lab space."""
+    """Match visible RGBA pixels to the closest selected palette colors in Lab space."""
 
     def __init__(self, palette: Palette):
         self.palette = palette

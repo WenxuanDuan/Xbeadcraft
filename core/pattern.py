@@ -206,7 +206,7 @@ class Pattern:
         return result
 
     def code_grid(self) -> list[list[str]]:
-        """Return MARD color codes as rows of strings; empty cells use an empty string."""
+        """Return palette color codes as rows of strings; empty cells use an empty string."""
 
         result: list[list[str]] = []
 
