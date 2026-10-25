@@ -4,8 +4,8 @@ from dataclasses import replace
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QImage, QPixmap
+from PySide6.QtCore import Qt, QRect
+from PySide6.QtGui import QAction, QColor, QIcon, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -35,6 +35,32 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PALETTE_PATH = PROJECT_ROOT / "data" / "mard_221.csv"
 
 
+class PatternPreview(QLabel):
+    """Selection is painted as an overlay, never into the exported sheet."""
+
+    def __init__(self, window):
+        super().__init__("请选择一张图片，然后点击“生成图纸”。")
+        self.window = window
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.window._select_cell(event.position(), event.modifiers())
+        super().mousePressEvent(event)
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        window = self.window
+        if window.pattern is None or window.render_config is None:
+            return
+        left, top, cell = window._grid_geometry()
+        painter = QPainter(self)
+        painter.setPen(QPen(QColor("#0066ff"), 3))
+        for x, y in window.selected_cells:
+            if window.render_config.mirror_horizontal:
+                x = window.pattern.width - 1 - x
+            painter.drawRect(QRect(left+x*cell+2, top+y*cell+2, cell-4, cell-4))
+
+
 class MainWindow(QMainWindow):
     """
     XBeadCraft 主窗口。
@@ -51,6 +77,8 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
+        self.selected_cells: set[tuple[int, int]] = set()
+        self.edit_history: list[dict[tuple[int, int], int]] = []
         self.pattern: Pattern | None = None
         self.render_config: RenderConfig | None = None
         self.source_path: Path | None = None
@@ -109,7 +137,11 @@ class MainWindow(QMainWindow):
         controls = self._create_control_panel()
         preview = self._create_preview_panel()
 
-        root_layout.addWidget(controls)
+        control_scroll = QScrollArea()
+        control_scroll.setWidgetResizable(True)
+        control_scroll.setFixedWidth(335)
+        control_scroll.setWidget(controls)
+        root_layout.addWidget(control_scroll)
         root_layout.addWidget(preview, stretch=1)
 
     def _create_control_panel(self) -> QWidget:
@@ -250,6 +282,44 @@ class MainWindow(QMainWindow):
         self.save_button.clicked.connect(self.save_sheet)
         layout.addWidget(self.save_button)
 
+        self.selection_label = QLabel("点击图纸选格；按住 Ctrl / ⌘ 可多选")
+        self.selection_label.setWordWrap(True)
+        layout.addWidget(self.selection_label)
+
+        layout.addWidget(QLabel("按色号全选（当前图纸）："))
+        self.source_color_combo = QComboBox()
+        self.source_color_combo.setEnabled(False)
+        layout.addWidget(self.source_color_combo)
+
+        self.select_color_button = QPushButton("全选此色号")
+        self.select_color_button.setEnabled(False)
+        self.select_color_button.clicked.connect(self.select_all_of_color)
+        layout.addWidget(self.select_color_button)
+
+        self.color_combo = QComboBox()
+        for index, color in enumerate(self.palette.colors):
+            swatch = QPixmap(20, 20)
+            swatch.fill(QColor(*color.rgb))
+            self.color_combo.addItem(QIcon(swatch), color.code, index)
+        self.color_combo.setEnabled(False)
+        layout.addWidget(QLabel("替换颜色（MARD 221）："))
+        layout.addWidget(self.color_combo)
+
+        self.replace_button = QPushButton("替换选中像素")
+        self.replace_button.setEnabled(False)
+        self.replace_button.clicked.connect(self.replace_selected_cells)
+        layout.addWidget(self.replace_button)
+
+        self.clear_selection_button = QPushButton("清除选择")
+        self.clear_selection_button.setEnabled(False)
+        self.clear_selection_button.clicked.connect(self._clear_selection)
+        layout.addWidget(self.clear_selection_button)
+
+        self.undo_button = QPushButton("撤销换色")
+        self.undo_button.setEnabled(False)
+        self.undo_button.clicked.connect(self.undo_color_edit)
+        layout.addWidget(self.undo_button)
+
         layout.addStretch()
 
         palette_info = QLabel(
@@ -272,16 +342,14 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.preview_label = QLabel(
-            "请选择一张图片，然后点击“生成图纸”。"
-        )
+        self.preview_label = PatternPreview(self)
         self.preview_label.setAlignment(
             Qt.AlignmentFlag.AlignCenter
         )
         self.preview_label.setStyleSheet(
             "background: #eeeeee;"
             "color: #777777;"
-            "padding: 30px;"
+            "padding: 0px;"
         )
 
         self.scroll_area = QScrollArea()
@@ -415,6 +483,10 @@ class MainWindow(QMainWindow):
             self._display_sheet(pattern, config)
             self.pattern = pattern
             self.render_config = config
+            self.edit_history.clear()
+            self._clear_selection()
+            self.color_combo.setEnabled(True)
+            self.undo_button.setEnabled(False)
             self.mirror_check.blockSignals(True)
             self.mirror_check.setChecked(False)
             self.mirror_check.blockSignals(False)
@@ -449,10 +521,11 @@ class MainWindow(QMainWindow):
         pixmap = self._pil_to_pixmap(image)
         self.preview_label.setText("")
         self.preview_label.setPixmap(pixmap)
-        self.preview_label.resize(pixmap.size())
+        self.preview_label.setFixedSize(pixmap.size())
         self.scroll_area.setWidgetResizable(False)
         self.sheet_image = image
         self.sheet_pixmap = pixmap
+        self._refresh_source_colors(pattern)
 
     def _toggle_mirror(self, checked: bool) -> None:
         if self.pattern is None or self.render_config is None:
@@ -472,6 +545,116 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             "已切换为水平镜像" if checked else "已恢复正常方向"
         )
+
+    def _refresh_source_colors(self, pattern: Pattern) -> None:
+        previous = self.source_color_combo.currentData()
+        self.source_color_combo.clear()
+        for row in pattern.statistics().itertuples(index=False):
+            index = int(row.palette_index)
+            color = pattern.palette[index]
+            swatch = QPixmap(20, 20)
+            swatch.fill(QColor(*color.rgb))
+            self.source_color_combo.addItem(
+                QIcon(swatch), f"{color.code} · {int(row.count)} 颗", index
+            )
+        position = self.source_color_combo.findData(previous)
+        if position >= 0:
+            self.source_color_combo.setCurrentIndex(position)
+        available = self.source_color_combo.count() > 0
+        self.source_color_combo.setEnabled(available)
+        self.select_color_button.setEnabled(available)
+
+    def select_all_of_color(self) -> None:
+        if self.pattern is None:
+            return
+        index = self.source_color_combo.currentData()
+        if not isinstance(index, int) or not 0 <= index < len(self.palette):
+            return
+        rows, columns = (self.pattern.grid == index).nonzero()
+        self.selected_cells = {(int(x), int(y)) for y, x in zip(rows, columns)}
+        self._update_selection()
+        self.statusBar().showMessage(
+            f"已全选 {self.palette[index].code}：{len(self.selected_cells)} 格，请选择目标色号并替换"
+        )
+
+    def _grid_geometry(self) -> tuple[int, int, int]:
+        config = self.render_config
+        cell = max(18, int(config.cell_size))
+        margin = max(24, int(cell * 0.9))
+        return (config.sheet_padding + margin,
+                config.sheet_padding + 76 + config.sheet_spacing + margin,
+                cell)
+
+    def _select_cell(self, position, modifiers) -> None:
+        if self.pattern is None or self.render_config is None:
+            return
+        left, top, cell = self._grid_geometry()
+        x = int((position.x() - left) // cell)
+        y = int((position.y() - top) // cell)
+        if not (0 <= x < self.pattern.width and 0 <= y < self.pattern.height):
+            return
+        if self.render_config.mirror_horizontal:
+            x = self.pattern.width - 1 - x
+        multiple = modifiers & (Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.MetaModifier)
+        if not multiple:
+            self.selected_cells.clear()
+        if (x, y) in self.selected_cells:
+            self.selected_cells.remove((x, y))
+        else:
+            self.selected_cells.add((x, y))
+        self._update_selection()
+
+    def _clear_selection(self) -> None:
+        self.selected_cells.clear()
+        self._update_selection()
+
+    def _update_selection(self) -> None:
+        count = len(self.selected_cells)
+        self.selection_label.setText(
+            f"已选中 {count} 格；按住 Ctrl / ⌘ 可多选" if count
+            else "点击图纸选格；按住 Ctrl / ⌘ 可多选"
+        )
+        self.replace_button.setEnabled(bool(count))
+        self.clear_selection_button.setEnabled(bool(count))
+        if hasattr(self, "preview_label"):
+            self.preview_label.update()
+
+    def _apply_cell_colors(self, colors: dict[tuple[int, int], int]) -> bool:
+        # Render before committing the edit so failures preserve the previous state.
+        candidate = self.pattern.copy()
+        candidate.title = getattr(self.pattern, "title", "")
+        for (x, y), index in colors.items():
+            candidate.set(x, y, index)
+        try:
+            self._display_sheet(candidate, self.render_config)
+        except Exception as exc:
+            QMessageBox.critical(self, "换色失败", str(exc))
+            return False
+        self.pattern = candidate
+        self.preview_label.update()
+        self.statusBar().showMessage(
+            f"图纸已更新｜{candidate.bead_count} 颗｜{candidate.color_count} 种颜色"
+        )
+        return True
+
+    def replace_selected_cells(self) -> None:
+        if self.pattern is None or not self.selected_cells:
+            return
+        index = self.color_combo.currentData()
+        if not isinstance(index, int) or not 0 <= index < len(self.palette):
+            return
+        previous = {(x, y): self.pattern.get(x, y)
+                    for x, y in self.selected_cells if self.pattern.get(x, y) != index}
+        if previous and self._apply_cell_colors({pos: index for pos in previous}):
+            self.edit_history.append(previous)
+            self.undo_button.setEnabled(True)
+
+    def undo_color_edit(self) -> None:
+        if self.pattern is None or not self.edit_history:
+            return
+        if self._apply_cell_colors(self.edit_history[-1]):
+            self.edit_history.pop()
+            self.undo_button.setEnabled(bool(self.edit_history))
 
     def save_sheet(self) -> None:
         if self.sheet_image is None:
