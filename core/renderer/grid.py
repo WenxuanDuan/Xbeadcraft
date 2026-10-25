@@ -158,7 +158,8 @@ def render_grid(
             x1 = x0 + cell_size
             y1 = y0 + cell_size
 
-            palette_index = int(pattern.grid[y, x])
+            source_x = width - 1 - x if config.mirror_horizontal else x
+            palette_index = int(pattern.grid[y, source_x])
 
             if palette_index < 0:
                 if config.checkerboard:

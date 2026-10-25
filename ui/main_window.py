@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from PIL import Image
@@ -26,6 +27,7 @@ from PySide6.QtWidgets import (
 from core.color_matcher import ColorMatcher
 from core.image_processor import ImageProcessor
 from core.palette import Palette
+from core.pattern import Pattern
 from core.renderer import RenderConfig, render_sheet
 
 
@@ -49,6 +51,8 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
 
+        self.pattern: Pattern | None = None
+        self.render_config: RenderConfig | None = None
         self.source_path: Path | None = None
         self.sheet_image: Image.Image | None = None
         self.sheet_pixmap: QPixmap | None = None
@@ -235,6 +239,11 @@ class MainWindow(QMainWindow):
         generate_button.clicked.connect(self.generate_sheet)
         layout.addWidget(generate_button)
 
+        self.mirror_check = QCheckBox("水平镜像")
+        self.mirror_check.setEnabled(False)
+        self.mirror_check.toggled.connect(self._toggle_mirror)
+        layout.addWidget(self.mirror_check)
+
         self.save_button = QPushButton("保存 PNG")
         self.save_button.setMinimumHeight(38)
         self.save_button.setEnabled(False)
@@ -403,24 +412,13 @@ class MainWindow(QMainWindow):
                 ),
             )
 
-            self.sheet_image = render_sheet(
-                pattern=pattern,
-                config=config,
-            )
-
-            self.sheet_pixmap = self._pil_to_pixmap(
-                self.sheet_image
-            )
-
-            self.preview_label.setText("")
-            self.preview_label.setPixmap(
-                self.sheet_pixmap
-            )
-            self.preview_label.resize(
-                self.sheet_pixmap.size()
-            )
-
-            self.scroll_area.setWidgetResizable(False)
+            self._display_sheet(pattern, config)
+            self.pattern = pattern
+            self.render_config = config
+            self.mirror_check.blockSignals(True)
+            self.mirror_check.setChecked(False)
+            self.mirror_check.blockSignals(False)
+            self.mirror_check.setEnabled(True)
             self.save_button.setEnabled(True)
 
             mode_label = (
@@ -444,6 +442,36 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(
                 "生成失败"
             )
+
+    def _display_sheet(self, pattern: Pattern, config: RenderConfig) -> None:
+        # 预览和保存共用同一张完整渲染结果。
+        image = render_sheet(pattern=pattern, config=config)
+        pixmap = self._pil_to_pixmap(image)
+        self.preview_label.setText("")
+        self.preview_label.setPixmap(pixmap)
+        self.preview_label.resize(pixmap.size())
+        self.scroll_area.setWidgetResizable(False)
+        self.sheet_image = image
+        self.sheet_pixmap = pixmap
+
+    def _toggle_mirror(self, checked: bool) -> None:
+        if self.pattern is None or self.render_config is None:
+            return
+
+        config = replace(self.render_config, mirror_horizontal=checked)
+        try:
+            self._display_sheet(self.pattern, config)
+        except Exception as exc:
+            self.mirror_check.blockSignals(True)
+            self.mirror_check.setChecked(self.render_config.mirror_horizontal)
+            self.mirror_check.blockSignals(False)
+            QMessageBox.critical(self, "镜像切换失败", str(exc))
+            return
+
+        self.render_config = config
+        self.statusBar().showMessage(
+            "已切换为水平镜像" if checked else "已恢复正常方向"
+        )
 
     def save_sheet(self) -> None:
         if self.sheet_image is None:

@@ -33,3 +33,6 @@ class RenderConfig:
     # 整体图纸配置
     sheet_padding: int = 16
     sheet_spacing: int = 16
+
+    # 只水平镜像拼豆位置，文字、坐标和图例保持正常方向
+    mirror_horizontal: bool = False
