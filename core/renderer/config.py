@@ -5,37 +5,35 @@ from dataclasses import dataclass
 
 @dataclass(slots=True)
 class RenderConfig:
-    """
-    拼豆图纸统一渲染配置。
-    """
+    """Shared rendering options for bead grids, legends, and complete sheets."""
 
-    # 每个拼豆格子的像素尺寸
+    # Pixel size of each bead cell
     cell_size: int = 28
 
-    # 是否显示拼豆真实颜色
+    # Show actual bead colors
     show_color: bool = True
 
-    # 是否显示上下左右坐标
+    # Show coordinates on all four sides
     show_coordinate: bool = True
 
-    # 每隔多少格绘制一条粗分隔线
+    # Number of cells between major grid lines
     major_grid_every: int = 5
 
-    # 透明区域是否使用棋盘背景
+    # Use a checkerboard for empty cells
     checkerboard: bool = True
 
-    # 底部图例配置
+    # Bottom legend options
     legend_swatch_width: int = 118
     legend_swatch_height: int = 42
     legend_spacing: int = 10
     legend_padding: int = 16
 
-    # 整体图纸配置
+    # Sheet layout options
     sheet_padding: int = 16
     sheet_spacing: int = 16
 
-    # 只水平镜像拼豆位置，文字、坐标和图例保持正常方向
+    # Mirror bead positions while keeping text, coordinates, and legends upright
     mirror_horizontal: bool = False
 
-    # count：用量降序；series：系列及色号数字升序
+    # count: descending usage; series: ascending series and numeric color code
     legend_sort: str = "count"

@@ -32,7 +32,7 @@ def download_mard_palette() -> pd.DataFrame:
     soup = BeautifulSoup(response.text, "html.parser")
     text = soup.get_text(" ", strip=True)
 
-    # 匹配 A1#FAF4C8、B12#166F41 等内容
+    # Match color codes followed by HEX values, such as A1#FAF4C8.
     matches = re.findall(
         r"\b((?:ZG|[A-Z])\d+)\s*(#[0-9A-Fa-f]{6})\b",
         text,
@@ -49,7 +49,7 @@ def download_mard_palette() -> pd.DataFrame:
 
         series = series_match.group()
 
-        # 只保留标准221色：A-H和M
+        # Keep only the standard 221 colors in series A-H and M.
         if series not in STANDARD_SERIES:
             continue
 
@@ -74,7 +74,7 @@ def download_mard_palette() -> pd.DataFrame:
 
     palette = pd.DataFrame(rows)
 
-    # 按系列和数字编号排序，避免 A1、A10、A11、A2
+    # Sort by series and numeric suffix, so A2 precedes A10.
     palette["number"] = (
         palette["code"]
         .str.extract(r"(\d+)")

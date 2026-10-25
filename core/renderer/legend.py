@@ -6,9 +6,7 @@ from core.pattern import Pattern
 
 
 def _load_font(size: int) -> ImageFont.ImageFont:
-    """
-    尝试加载系统字体，失败时使用 Pillow 默认字体。
-    """
+    """Load a system font, falling back to the default Pillow font."""
 
     font_paths = [
         "/System/Library/Fonts/Supplemental/Arial.ttf",
@@ -35,17 +33,7 @@ def render_legend(
     width: int = 460,
     title: str = "MARD Color Legend",
 ) -> Image.Image:
-    """
-    将 Pattern 的图例渲染成图片。
-
-    每一行包含：
-
-    - 图纸编号
-    - 颜色色块
-    - MARD 色号
-    - HEX
-    - 使用数量
-    """
+    """Render legend rows with numbers, swatches, MARD codes, HEX values, and counts."""
 
     legend_table = pattern.legend_table()
 
@@ -77,14 +65,14 @@ def render_legend(
     header_font = _load_font(15)
     body_font = _load_font(15)
 
-    # 各列起始位置
+    # Column positions
     number_x = 18
     color_x = 72
     code_x = 132
     hex_x = 226
     count_x = 344
 
-    # 标题
+    # Title
     draw.text(
         (18, 14),
         title,
@@ -94,7 +82,7 @@ def render_legend(
 
     header_top = title_height
 
-    # 表头背景
+    # Table header background
     draw.rectangle(
         (
             0,
@@ -140,7 +128,7 @@ def render_legend(
         font=header_font,
     )
 
-    # 表头下划线
+    # Table header underline
     draw.line(
         (
             0,
@@ -161,7 +149,7 @@ def render_legend(
 
         bottom = top + row_height
 
-        # 隔行背景
+        # Alternating row background
         if row_index % 2 == 1:
             draw.rectangle(
                 (0, top, width, bottom),
@@ -181,7 +169,7 @@ def render_legend(
             (row_height - 16) // 2,
         )
 
-        # 编号
+        # Legend number
         draw.text(
             (number_x, text_y),
             str(number),
@@ -189,7 +177,7 @@ def render_legend(
             font=body_font,
         )
 
-        # 色块
+        # Color swatch
         swatch_size = min(28, row_height - 10)
 
         swatch_top = top + (row_height - swatch_size) // 2
@@ -206,7 +194,7 @@ def render_legend(
             width=1,
         )
 
-        # MARD 色号
+        # MARD color code
         draw.text(
             (code_x, text_y),
             code,
@@ -222,7 +210,7 @@ def render_legend(
             font=body_font,
         )
 
-        # 数量
+        # Bead count
         draw.text(
             (count_x, text_y),
             str(count),
@@ -230,7 +218,7 @@ def render_legend(
             font=body_font,
         )
 
-        # 行分隔线
+        # Row separator
         draw.line(
             (
                 0,

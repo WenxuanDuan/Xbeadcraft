@@ -7,9 +7,7 @@ from .config import RenderConfig
 
 
 def _load_font(size: int) -> ImageFont.ImageFont:
-    """
-    加载适合显示英文字母和数字的字体。
-    """
+    """Load a system font, falling back to the default Pillow font."""
 
     font_paths = [
         "/System/Library/Fonts/Supplemental/Arial.ttf",
@@ -34,9 +32,7 @@ def _center_text(
     font: ImageFont.ImageFont,
     fill: tuple[int, int, int] | str,
 ) -> None:
-    """
-    将文字绘制在指定矩形中心。
-    """
+    """Center text horizontally and vertically inside a rectangle."""
 
     left, top, right, bottom = box
 
@@ -63,9 +59,7 @@ def _center_text(
 def _text_color_for_background(
     rgb: tuple[int, int, int],
 ) -> tuple[int, int, int]:
-    """
-    根据背景亮度选择黑色或白色文字。
-    """
+    """Choose a readable text color based on background luminance."""
 
     red, green, blue = rgb
 
@@ -85,17 +79,9 @@ def render_grid(
     pattern: Pattern,
     config: RenderConfig,
 ) -> Image.Image:
-    """
-    生成可直接照着摆豆的拼豆网格图。
+    """Render bead backgrounds, upright MARD codes, grid lines, and optional coordinates.
 
-    图纸特点：
-
-    - 每格显示真实 MARD 色号
-    - 上下左右显示坐标
-    - 每 major_grid_every 格绘制粗线
-    - 透明区域显示浅色棋盘背景
-    - 可选显示实际颜色或淡化颜色
-    """
+    Horizontal mirroring changes bead positions without reversing text."""
 
     cell_size = max(18, int(config.cell_size))
     major_every = max(1, int(config.major_grid_every))
@@ -148,7 +134,7 @@ def render_grid(
     grid_top = coordinate_margin
 
     # =========================
-    # 单元格背景与色号
+    # Cell backgrounds and MARD codes
     # =========================
 
     for y in range(height):
@@ -208,7 +194,7 @@ def render_grid(
             )
 
     # =========================
-    # 普通网格线
+    # Grid lines
     # =========================
 
     normal_line_color = (185, 185, 185)
@@ -271,7 +257,7 @@ def render_grid(
         )
 
     # =========================
-    # 上下坐标
+    # Top and bottom coordinates
     # =========================
 
     if config.show_coordinate:
@@ -312,7 +298,7 @@ def render_grid(
             )
 
     # =========================
-    # 左右坐标
+    # Left and right coordinates
     # =========================
 
     if config.show_coordinate:

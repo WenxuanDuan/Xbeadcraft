@@ -11,25 +11,15 @@ from .palette import Palette
 
 @dataclass
 class Pattern:
-    """
-    拼豆图案数据。
+    """Bead pattern backed by a two-dimensional palette-index array.
 
-    grid 是二维 numpy 数组：
-
-    -1:
-        透明区域，不放拼豆
-
-    >= 0:
-        对应 Palette 中颜色的索引
-    """
+    A value of -1 represents an empty cell; nonnegative values index the palette."""
 
     grid: np.ndarray
     palette: Palette
 
     def __post_init__(self) -> None:
-        """
-        初始化后统一检查 grid 格式。
-        """
+        """Normalize the grid to int32 and validate its dimensions and palette indices."""
 
         self.grid = np.asarray(
             self.grid,
@@ -55,33 +45,25 @@ class Pattern:
 
     @property
     def width(self) -> int:
-        """
-        图纸宽度，单位为颗。
-        """
+        """Return the pattern width in bead cells."""
 
         return int(self.grid.shape[1])
 
     @property
     def height(self) -> int:
-        """
-        图纸高度，单位为颗。
-        """
+        """Return the pattern height in bead cells."""
 
         return int(self.grid.shape[0])
 
     @property
     def bead_count(self) -> int:
-        """
-        实际需要的拼豆总数。
-        """
+        """Return the total number of occupied cells."""
 
         return int(np.sum(self.grid >= 0))
 
     @property
     def color_count(self) -> int:
-        """
-        实际使用的颜色数量。
-        """
+        """Return the number of distinct colors in use."""
 
         values = self.grid[self.grid >= 0]
 
@@ -92,9 +74,7 @@ class Pattern:
 
     @property
     def visible_mask(self) -> np.ndarray:
-        """
-        返回可见拼豆区域的布尔数组。
-        """
+        """Return a Boolean mask of occupied bead cells."""
 
         return self.grid >= 0
 
@@ -103,17 +83,7 @@ class Pattern:
         x: int,
         y: int,
     ) -> int:
-        """
-        获取指定格子的 Palette 索引。
-
-        Parameters
-        ----------
-        x
-            横坐标，从 0 开始。
-
-        y
-            纵坐标，从 0 开始。
-        """
+        """Return the palette index at zero-based coordinates (x, y)."""
 
         self._validate_position(x, y)
 
@@ -125,13 +95,7 @@ class Pattern:
         y: int,
         palette_index: int,
     ) -> None:
-        """
-        修改指定格子的颜色。
-
-        palette_index:
-            -1 表示透明
-            >=0 表示 Palette 中的颜色索引
-        """
+        """Set a cell to a valid palette index, or -1 to make it empty."""
 
         self._validate_position(x, y)
         self._validate_palette_index(palette_index)
@@ -143,30 +107,12 @@ class Pattern:
         x: int,
         y: int,
     ) -> None:
-        """
-        将指定格子设为透明。
-        """
+        """Clear the cell at zero-based coordinates (x, y)."""
 
         self.set(x, y, -1)
 
     def statistics(self) -> pd.DataFrame:
-        """
-        返回颜色使用统计。
-
-        返回列：
-
-        palette_index
-            Palette 中的颜色索引
-
-        code
-            MARD 色号
-
-        hex
-            HEX 参考颜色
-
-        count
-            使用数量
-        """
+        """Return color usage with palette_index, code, hex, and count columns."""
 
         values = self.grid[self.grid >= 0]
 
@@ -205,25 +151,7 @@ class Pattern:
         )
 
     def legend(self) -> dict[int, int]:
-        """
-        生成图纸内部编号。
-
-        返回格式：
-
-        {
-            palette_index: 图纸编号
-        }
-
-        例如：
-
-        {
-            12: 1,
-            35: 2,
-            8: 3,
-        }
-
-        编号顺序按照颜色使用数量从多到少排列。
-        """
+        """Map palette indices to one-based legend numbers in descending usage order."""
 
         stats = self.statistics()
 
@@ -238,26 +166,7 @@ class Pattern:
         return mapping
 
     def legend_table(self) -> pd.DataFrame:
-        """
-        返回适合图纸显示和导出的图例表。
-
-        返回列：
-
-        number
-            图纸内部编号
-
-        palette_index
-            Palette 中的颜色索引
-
-        code
-            MARD 色号
-
-        hex
-            HEX 参考颜色
-
-        count
-            使用数量
-        """
+        """Return usage statistics with a one-based number column for display and export."""
 
         stats = self.statistics().copy()
 
@@ -281,15 +190,7 @@ class Pattern:
         return stats
 
     def number_grid(self) -> np.ndarray:
-        """
-        返回图纸内部编号组成的二维数组。
-
-        -1:
-            透明区域
-
-        1、2、3……
-            对应 legend() 中的图纸编号
-        """
+        """Return a grid of legend numbers, using -1 for empty cells."""
 
         result = np.full(
             self.grid.shape,
@@ -305,11 +206,7 @@ class Pattern:
         return result
 
     def code_grid(self) -> list[list[str]]:
-        """
-        返回 MARD 色号组成的二维列表。
-
-        透明格子返回空字符串。
-        """
+        """Return MARD color codes as rows of strings; empty cells use an empty string."""
 
         result: list[list[str]] = []
 
@@ -331,11 +228,7 @@ class Pattern:
         return result
 
     def rgb_image(self) -> np.ndarray:
-        """
-        返回 RGBA 格式的 numpy 图片数组。
-
-        透明格子的 Alpha 为 0。
-        """
+        """Return an RGBA array with alpha zero for empty cells."""
 
         image = np.zeros(
             (
@@ -362,9 +255,7 @@ class Pattern:
         return image
 
     def copy(self) -> Pattern:
-        """
-        返回 Pattern 的独立副本。
-        """
+        """Return a copy with independent grid storage and the same palette."""
 
         return Pattern(
             grid=self.grid.copy(),
@@ -376,9 +267,7 @@ class Pattern:
         x: int,
         y: int,
     ) -> None:
-        """
-        检查坐标是否有效。
-        """
+        """Validate zero-based cell coordinates."""
 
         if not 0 <= x < self.width:
             raise IndexError(
@@ -396,9 +285,7 @@ class Pattern:
         self,
         palette_index: int,
     ) -> None:
-        """
-        检查颜色索引是否有效。
-        """
+        """Validate a palette index, allowing -1 for an empty cell."""
 
         if palette_index == -1:
             return

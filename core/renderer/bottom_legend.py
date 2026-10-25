@@ -11,9 +11,7 @@ from .config import RenderConfig
 
 @dataclass(frozen=True)
 class LegendChip:
-    """
-    单个颜色图例的数据和尺寸。
-    """
+    """Color data, bead count, and layout width for a legend chip."""
 
     palette_index: int
     code: str
@@ -23,9 +21,7 @@ class LegendChip:
 
 
 def _load_font(size: int) -> ImageFont.ImageFont:
-    """
-    加载系统字体；失败时使用 Pillow 默认字体。
-    """
+    """Load a system font, falling back to the default Pillow font."""
 
     font_paths = [
         "/System/Library/Fonts/Supplemental/Arial.ttf",
@@ -48,9 +44,7 @@ def _measure_text(
     text: str,
     font: ImageFont.ImageFont,
 ) -> tuple[int, int]:
-    """
-    测量文本的像素尺寸。
-    """
+    """Return the pixel width and height of rendered text."""
 
     bbox = draw.textbbox(
         (0, 0),
@@ -71,9 +65,7 @@ def _build_chips(
     chip_height: int,
     sort_mode: str = "count",
 ) -> list[LegendChip]:
-    """
-    根据 Pattern 图例生成自适应宽度的 Chip。
-    """
+    """Build adaptive-width color chips and sort by usage or MARD series."""
 
     table = pattern.legend_table()
 
@@ -149,9 +141,7 @@ def _layout_rows(
     max_content_width: int,
     gap: int,
 ) -> list[list[LegendChip]]:
-    """
-    使用类似网页 flex-wrap 的方式自动换行。
-    """
+    """Wrap legend chips into rows within the available content width."""
 
     rows: list[list[LegendChip]] = []
     current_row: list[LegendChip] = []
@@ -187,9 +177,7 @@ def _draw_centered_text(
     font: ImageFont.ImageFont,
     fill: tuple[int, int, int],
 ) -> None:
-    """
-    在矩形区域内水平、垂直居中绘制文本。
-    """
+    """Center text horizontally and vertically inside a rectangle."""
 
     left, top, right, bottom = box
 
@@ -221,9 +209,7 @@ def _draw_chip(
     height: int,
     font: ImageFont.ImageFont,
 ) -> None:
-    """
-    绘制一个颜色图例 Chip。
-    """
+    """Draw a legend chip with a color swatch, MARD code, and bead count."""
 
     border_color = (210, 210, 210)
     background_color = (249, 249, 249)
@@ -312,25 +298,7 @@ def render_bottom_legend(
     config: RenderConfig,
     max_width: int,
 ) -> Image.Image:
-    """
-    渲染底部横向颜色图例。
-
-    Parameters
-    ----------
-    pattern
-        拼豆图案。
-
-    config
-        统一渲染配置。
-
-    max_width
-        图例图片的最大宽度，通常传入网格图的宽度。
-
-    Returns
-    -------
-    Image.Image
-        底部图例图片。
-    """
+    """Render the sorted bottom legend within max_width pixels."""
 
     if max_width <= 0:
         raise ValueError("max_width 必须大于 0。")
@@ -386,7 +354,7 @@ def render_bottom_legend(
             "max_width 太小，无法容纳图例边距。"
         )
 
-    # 如果单个 Chip 比可用区域还宽，将其压缩到可用宽度。
+    # Clamp chip widths to the available content area.
     normalized_chips = [
         LegendChip(
             palette_index=chip.palette_index,

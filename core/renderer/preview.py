@@ -11,20 +11,7 @@ def render_preview(
     scale: int = 20,
     checkerboard: bool = True,
 ) -> Image.Image:
-    """
-    渲染彩色拼豆预览图。
-
-    Parameters
-    ----------
-    pattern
-        拼豆图案
-
-    scale
-        每颗拼豆放大多少倍
-
-    checkerboard
-        是否绘制透明背景棋盘
-    """
+    """Render enlarged bead colors with an optional checkerboard for empty cells."""
 
     scale = max(1, int(scale))
 

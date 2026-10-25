@@ -62,17 +62,7 @@ class PatternPreview(QLabel):
 
 
 class MainWindow(QMainWindow):
-    """
-    XBeadCraft 主窗口。
-
-    当前支持：
-    - 打开图片
-    - 固定宽度、固定高度、固定最长边
-    - 图鉴模式：按目标拼豆数量统一视觉体量
-    - MARD 色卡自动匹配
-    - 生成完整拼豆图纸
-    - 保存 PNG
-    """
+    """Main desktop window for XXBeadPattern: generation, editing, and PNG export."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -89,7 +79,7 @@ class MainWindow(QMainWindow):
         self.processor = ImageProcessor()
         self.matcher = ColorMatcher(self.palette)
 
-        self.setWindowTitle("XBeadCraft")
+        self.setWindowTitle("XXBeadPattern")
         self.resize(1320, 860)
 
         self._build_menu()
@@ -524,7 +514,7 @@ class MainWindow(QMainWindow):
             )
 
     def _display_sheet(self, pattern: Pattern, config: RenderConfig) -> None:
-        # 预览和保存共用同一张完整渲染结果。
+        # Use the same complete rendered image for preview and PNG export.
         image = render_sheet(pattern=pattern, config=config)
         pixmap = self._pil_to_pixmap(image)
         self.preview_label.setText("")

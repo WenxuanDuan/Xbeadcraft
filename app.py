@@ -9,14 +9,14 @@ from ui.main_window import MainWindow
 
 def main() -> int:
     app = QApplication(sys.argv)
-    app.setApplicationName("XBeadCraft")
+    app.setApplicationName("XXBeadPattern")
 
     try:
         window = MainWindow()
     except Exception as exc:
         QMessageBox.critical(
             None,
-            "XBeadCraft 启动失败",
+            "XXBeadPattern 启动失败",
             str(exc),
         )
         return 1

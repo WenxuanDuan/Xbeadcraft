@@ -4,9 +4,7 @@ from PIL import ImageFont
 
 
 def load_font(size: int):
-    """
-    加载系统字体，失败则使用 Pillow 默认字体。
-    """
+    """Load a system font, falling back to the default Pillow font."""
 
     font_paths = [
         "/System/Library/Fonts/Supplemental/Arial.ttf",

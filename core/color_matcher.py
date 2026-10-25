@@ -9,12 +9,7 @@ from .pattern import Pattern
 
 
 class ColorMatcher:
-    """
-    将RGBA图片匹配到拼豆色卡。
-
-    图片中的每个非透明像素，会被转换为Lab颜色，
-    然后寻找色卡中距离最近的颜色。
-    """
+    """Match visible RGBA pixels to the closest MARD palette colors in Lab space."""
 
     def __init__(self, palette: Palette):
         self.palette = palette
@@ -24,13 +19,7 @@ class ColorMatcher:
         image: Image.Image,
         alpha_threshold: int = 128,
     ) -> Pattern:
-        """
-        将图片转换为Pattern。
-
-        alpha_threshold:
-            Alpha值小于该阈值的像素视为透明，
-            在Pattern中记录为-1。
-        """
+        """Build a pattern from an image; pixels below alpha_threshold become empty cells."""
 
         rgba = np.asarray(
             image.convert("RGBA"),
@@ -65,12 +54,7 @@ class ColorMatcher:
         pixel_lab: np.ndarray,
         chunk_size: int = 4096,
     ) -> np.ndarray:
-        """
-        分批寻找每个像素最接近的色卡颜色。
-
-        分批处理是为了避免较大图纸时一次创建
-        过大的“像素数 × 221色”距离矩阵。
-        """
+        """Find nearest palette colors in chunks to limit the pixel-by-palette distance matrix."""
 
         result = np.empty(
             len(pixel_lab),

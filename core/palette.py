@@ -45,10 +45,10 @@ class Palette:
 
         df = pd.read_csv(self.csv_path)
 
-        # 自动兼容大小写
+        # Normalize column names to lowercase.
         df.columns = [c.lower() for c in df.columns]
 
-        # 如果没有RGB，就由HEX生成
+        # Derive RGB channels from HEX when RGB columns are absent.
         if "r" not in df.columns:
 
             rgb = df["hex"].apply(self.hex_to_rgb)

@@ -12,9 +12,7 @@ from .bottom_legend import render_bottom_legend
 
 
 def _load_font(size: int) -> ImageFont.ImageFont:
-    """
-    加载字体。
-    """
+    """Load a system font, falling back to the default Pillow font."""
 
     font_paths = [
         "/System/Library/Fonts/Supplemental/Arial.ttf",
@@ -39,14 +37,7 @@ def _draw_title(
     y: int,
     width: int,
 ) -> int:
-    """
-    绘制标题区域。
-
-    Returns
-    -------
-    int
-        标题区域高度。
-    """
+    """Draw the pattern title and usage summary; return the header height."""
 
     title_font = _load_font(26)
     info_font = _load_font(15)
@@ -103,9 +94,7 @@ def _draw_footer(
     x: int,
     y: int,
 ):
-    """
-    绘制底部信息。
-    """
+    """Draw the sheet footer."""
 
     font = _load_font(12)
 
@@ -134,19 +123,7 @@ def render_sheet(
     pattern: Pattern,
     config: RenderConfig,
 ) -> Image.Image:
-    """
-    渲染完整图纸。
-
-    输出：
-
-    Header
-
-    Grid
-
-    Bottom Legend
-
-    Footer
-    """
+    """Compose a complete sheet with a header, bead grid, bottom legend, and footer."""
 
     grid = render_grid(
         pattern,

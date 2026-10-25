@@ -7,24 +7,7 @@ from PIL import Image, ImageOps
 
 
 class ImageProcessor:
-    """
-    图片预处理与尺寸计算。
-
-    支持四种尺寸模式：
-
-    width:
-        固定宽度，按比例计算高度。
-
-    height:
-        固定高度，按比例计算宽度。
-
-    longest:
-        固定最长边。
-
-    collection:
-        图鉴模式。根据主体占用面积，自动调整宽高，
-        让不同造型角色的可见拼豆数量接近。
-    """
+    """Preprocess images and resize by width, height, longest side, or target bead count."""
 
     RESAMPLING_METHODS = {
         "nearest": Image.Resampling.NEAREST,
@@ -37,12 +20,7 @@ class ImageProcessor:
         image: Image.Image,
         alpha_threshold: int = 1,
     ) -> Image.Image:
-        """
-        裁掉透明边缘。
-
-        alpha_threshold:
-            Alpha 小于该值的区域视为透明。
-        """
+        """Crop to pixels whose alpha meets the threshold; preserve fully transparent images."""
 
         rgba = image.convert("RGBA")
         alpha = np.asarray(rgba.getchannel("A"))
@@ -81,9 +59,7 @@ class ImageProcessor:
         target_width: int,
         method: str = "lanczos",
     ) -> Image.Image:
-        """
-        固定宽度并保持比例。
-        """
+        """Resize to the target width while preserving the aspect ratio."""
 
         if target_width <= 0:
             raise ValueError("target_width 必须大于 0。")
@@ -107,9 +83,7 @@ class ImageProcessor:
         target_height: int,
         method: str = "lanczos",
     ) -> Image.Image:
-        """
-        固定高度并保持比例。
-        """
+        """Resize to the target height while preserving the aspect ratio."""
 
         if target_height <= 0:
             raise ValueError("target_height 必须大于 0。")
@@ -133,9 +107,7 @@ class ImageProcessor:
         target_size: int,
         method: str = "lanczos",
     ) -> Image.Image:
-        """
-        固定最长边并保持比例。
-        """
+        """Resize to the target longest side while preserving the aspect ratio."""
 
         if target_size <= 0:
             raise ValueError("target_size 必须大于 0。")
@@ -158,9 +130,7 @@ class ImageProcessor:
         image: Image.Image,
         alpha_threshold: int,
     ) -> float:
-        """
-        计算主体在裁剪后边界框中的占用比例。
-        """
+        """Return the fraction of pixels whose alpha meets the threshold."""
 
         alpha = np.asarray(
             image.convert("RGBA").getchannel("A"),
@@ -199,27 +169,10 @@ class ImageProcessor:
         method: str = "lanczos",
         max_side: int = 120,
     ) -> Image.Image:
-        """
-        图鉴模式。
+        """Resize toward a target number of visible beads.
 
-        目标不是统一宽度或最长边，而是让每个角色最终
-        使用的可见拼豆数量接近 target_beads。
-
-        例如：
-            高瘦角色会适当放大；
-            矮胖、面积较大的角色会适当缩小。
-
-        Parameters
-        ----------
-        target_beads
-            希望主体使用的拼豆数量。
-
-        alpha_threshold
-            Alpha 大于等于该值的像素视为需要拼豆。
-
-        max_side
-            防止极端图片生成过大的尺寸。
-        """
+    Estimate dimensions from visible area and aspect ratio, limit the longest
+    side to max_side, then refine the size using the actual visible pixel count."""
 
         if target_beads <= 0:
             raise ValueError("target_beads 必须大于 0。")
@@ -239,11 +192,11 @@ class ImageProcessor:
 
         aspect_ratio = rgba.width / rgba.height
 
-        # 可见拼豆数约为：
+        # Estimate the visible bead count:
         #
         # target_width × target_height × visible_ratio
         #
-        # 同时保持：
+        # Preserve the aspect ratio:
         #
         # target_width / target_height = aspect_ratio
         target_width = math.sqrt(
@@ -257,7 +210,7 @@ class ImageProcessor:
         width = max(1, round(target_width))
         height = max(1, round(target_height))
 
-        # 防止图片过大。
+        # Limit the output dimensions.
         longest = max(width, height)
 
         if longest > max_side:
@@ -273,8 +226,8 @@ class ImageProcessor:
             resampling,
         )
 
-        # 缩放后 Alpha 抗锯齿会影响实际拼豆数量。
-        # 通过少量迭代，让结果更接近目标值。
+        # Resampling alpha values can change the visible bead count.
+        # Refine the dimensions to approach the target bead count.
         for _ in range(5):
             actual_beads = cls._visible_pixel_count(
                 result,
@@ -286,7 +239,7 @@ class ImageProcessor:
 
             error_ratio = target_beads / actual_beads
 
-            # 误差小于 3% 时，不再调整。
+            # Stop when the count is within approximately 3% of the target.
             if 0.97 <= error_ratio <= 1.03:
                 break
 
@@ -327,25 +280,11 @@ class ImageProcessor:
         target_beads: int = 850,
         alpha_threshold: int = 128,
     ) -> Image.Image:
-        """
-        统一图片处理入口。
+        """Apply EXIF orientation, optional transparent-border cropping, and resizing.
 
-        Parameters
-        ----------
-        width
-            width 模式下表示宽度；
-            longest 模式下表示最长边。
-
-        height
-            height 模式下的目标高度；
-            关闭保持比例时的强制高度。
-
-        size_mode
-            width / height / longest / collection
-
-        target_beads
-            collection 模式下的目标可见拼豆数量。
-        """
+    width sets the width or longest side; height sets the target height.
+    collection mode uses target_beads. Disabling keep_ratio in width mode
+    requires a positive height."""
 
         rgba = ImageOps.exif_transpose(image).convert("RGBA")
 
