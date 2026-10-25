@@ -258,6 +258,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(language_row)
 
         form = QFormLayout()
+        self.size_form = form
         form.setVerticalSpacing(12)
 
         self.size_mode_combo = QComboBox()
@@ -265,6 +266,7 @@ class MainWindow(QMainWindow):
         self._add_item(self.size_mode_combo, '固定最长边', "longest")
         self._add_item(self.size_mode_combo, '固定宽度', "width")
         self._add_item(self.size_mode_combo, '固定高度', "height")
+        self._add_item(self.size_mode_combo, "照片模式", "photo")
         self.size_mode_combo.currentIndexChanged.connect(
             self._update_size_controls
         )
@@ -282,6 +284,35 @@ class MainWindow(QMainWindow):
         self.target_size_spin.setValue(40)
         self.target_size_spin.setSuffix(self._tr(' 颗'))
         form.addRow(self._text_widget(QLabel, '目标尺寸：'), self.target_size_spin)
+
+        self.photo_controls = QWidget()
+        photo_form = QFormLayout(self.photo_controls)
+        photo_form.setContentsMargins(0, 0, 0, 0)
+        self.photo_preset_combo = QComboBox()
+        self._add_item(self.photo_preset_combo, "小型 · 最长边 40 颗", 40)
+        self._add_item(self.photo_preset_combo, "标准 · 最长边 80 颗", 80)
+        self._add_item(self.photo_preset_combo, "精细 · 最长边 120 颗", 120)
+        self._add_item(self.photo_preset_combo, "大型 · 最长边 160 颗", 160)
+        self._add_item(self.photo_preset_combo, "自定义宽高", 0)
+        self.photo_preset_combo.setCurrentIndex(1)
+        photo_form.addRow(self._text_widget(QLabel, "照片规格："), self.photo_preset_combo)
+        self.photo_width_spin = QSpinBox()
+        self.photo_height_spin = QSpinBox()
+        for spin in (self.photo_width_spin, self.photo_height_spin):
+            spin.setRange(1, 200)
+            spin.setValue(80)
+        photo_form.addRow(self._text_widget(QLabel, "图纸宽度："), self.photo_width_spin)
+        photo_form.addRow(self._text_widget(QLabel, "图纸高度："), self.photo_height_spin)
+        self.photo_fit_combo = QComboBox()
+        self._add_item(self.photo_fit_combo, "保持比例（按宽度）", "width")
+        self._add_item(self.photo_fit_combo, "保持比例（按高度）", "height")
+        self._add_item(self.photo_fit_combo, "裁剪填满", "crop")
+        self._add_item(self.photo_fit_combo, "留白完整显示", "contain")
+        photo_form.addRow(self._text_widget(QLabel, "画面适配："), self.photo_fit_combo)
+        self.photo_estimate_label = QLabel()
+        self.photo_estimate_label.setWordWrap(True)
+        photo_form.addRow(self.photo_estimate_label)
+        form.addRow(self.photo_controls)
 
         self.cell_size_spin = QSpinBox()
         self.cell_size_spin.setRange(18, 60)
@@ -397,6 +428,12 @@ class MainWindow(QMainWindow):
         )
         layout.addWidget(palette_info)
 
+        self.photo_preset_combo.currentIndexChanged.connect(self._update_size_controls)
+        self.photo_fit_combo.currentIndexChanged.connect(self._update_size_controls)
+        self.photo_width_spin.valueChanged.connect(self._update_photo_estimate)
+        self.photo_height_spin.valueChanged.connect(self._update_photo_estimate)
+        self.trim_check.toggled.connect(self._update_photo_estimate)
+        self.alpha_spin.valueChanged.connect(self._update_photo_estimate)
         self._update_size_controls()
 
         return panel
@@ -438,12 +475,26 @@ class MainWindow(QMainWindow):
         mode = self.size_mode_combo.currentData()
 
         is_collection = mode == "collection"
+        is_photo = mode == "photo"
+        self.photo_controls.setVisible(is_photo)
+        self.keep_ratio_check.setEnabled(not is_photo)
+        self.keep_ratio_check.setVisible(not is_photo)
+        self.size_form.setRowVisible(self.collection_size_combo, is_collection)
+        self.size_form.setRowVisible(self.target_size_spin, not is_collection and not is_photo)
+        custom = self.photo_preset_combo.currentData() == 0
+        fit = self.photo_fit_combo.currentData()
+        self.photo_fit_combo.setEnabled(custom)
+        self.photo_width_spin.setMaximum(200 if not custom or fit != "height" else self.photo_width_spin.maximum())
+        self.photo_height_spin.setMaximum(200 if not custom or fit != "width" else self.photo_height_spin.maximum())
+        self.photo_width_spin.setEnabled(custom and fit != "height")
+        self.photo_height_spin.setEnabled(custom and fit != "width")
+        self._update_photo_estimate()
 
         self.collection_size_combo.setEnabled(
             is_collection
         )
         self.target_size_spin.setEnabled(
-            not is_collection
+            not is_collection and not is_photo
         )
 
         if mode == "width":
@@ -457,6 +508,49 @@ class MainWindow(QMainWindow):
 
         else:
             self.target_size_spin.setSuffix(self._tr(' 颗'))
+
+    def _photo_options(self) -> dict:
+        preset = self.photo_preset_combo.currentData()
+        if preset:
+            return {"width": int(preset), "height": int(preset), "photo_fit": "longest"}
+        return {"width": self.photo_width_spin.value(), "height": self.photo_height_spin.value(),
+                "photo_fit": self.photo_fit_combo.currentData()}
+
+    def _update_photo_estimate(self) -> None:
+        if self.size_mode_combo.currentData() != "photo":
+            return
+        if self.source_path is None:
+            self.photo_estimate_label.setText(self._tr("选择图片后显示预计尺寸；宽高单位为颗。"))
+            return
+        try:
+            with Image.open(self.source_path) as image:
+                prepared = self.processor.prepare_source(image, self.trim_check.isChecked(), self.alpha_spin.value())
+            options = self._photo_options()
+            width, height = self.processor.photo_dimensions(
+                prepared.size, options["width"], options["height"], options["photo_fit"]
+            )
+            self.photo_width_spin.blockSignals(True)
+            self.photo_height_spin.blockSignals(True)
+            if not self.photo_preset_combo.currentData():
+                if options["photo_fit"] == "width":
+                    self.photo_height_spin.setMaximum(max(200, height))
+                elif options["photo_fit"] == "height":
+                    self.photo_width_spin.setMaximum(max(200, width))
+                if options["photo_fit"] == "width":
+                    self.photo_height_spin.setValue(height)
+                elif options["photo_fit"] == "height":
+                    self.photo_width_spin.setValue(width)
+            else:
+                self.photo_width_spin.setValue(width)
+                self.photo_height_spin.setValue(height)
+            self.photo_width_spin.blockSignals(False)
+            self.photo_height_spin.blockSignals(False)
+            self.photo_estimate_label.setText(self._tr(
+                "预计 {width} × {height} 格，最多 {count} 颗；透明或留白不计入实际用量。",
+                width=width, height=height, count=width * height,
+            ))
+        except Exception as exc:
+            self.photo_estimate_label.setText(translate_error(self.language, str(exc)))
 
     def open_image(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
@@ -472,6 +566,7 @@ class MainWindow(QMainWindow):
 
         self.source_path = Path(filename)
         self.file_label.setText(self.source_path.name)
+        self._update_photo_estimate()
 
         self.statusBar().showMessage(
             self._tr('已选择：{value0}', value0=self.source_path.name)
@@ -505,24 +600,26 @@ class MainWindow(QMainWindow):
                 else 850
             )
 
+            photo_options = self._photo_options() if size_mode == "photo" else {
+                "width": self.target_size_spin.value(), "height": self.target_size_spin.value()
+            }
             with Image.open(self.source_path) as source:
                 processed = self.processor.process(
                     image=source,
-                    width=self.target_size_spin.value(),
+                    **photo_options,
                     keep_ratio=(
                         self.keep_ratio_check.isChecked()
                     ),
                     trim=self.trim_check.isChecked(),
                     method="lanczos",
                     size_mode=size_mode,
-                    height=self.target_size_spin.value(),
                     target_beads=target_beads,
                     alpha_threshold=self.alpha_spin.value(),
                 )
 
             pattern = self.matcher.match(
                 image=processed,
-                alpha_threshold=self.alpha_spin.value(),
+                alpha_threshold=max(1, self.alpha_spin.value()) if size_mode == "photo" else self.alpha_spin.value(),
             )
 
             pattern.title = self.source_path.stem

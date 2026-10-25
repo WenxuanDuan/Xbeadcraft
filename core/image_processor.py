@@ -7,7 +7,7 @@ from PIL import Image, ImageOps
 
 
 class ImageProcessor:
-    """Preprocess images and resize by width, height, longest side, or target bead count."""
+    """Preprocess images for collection sizing, photo grids, or single-dimension resizing."""
 
     RESAMPLING_METHODS = {
         "nearest": Image.Resampling.NEAREST,
@@ -268,6 +268,45 @@ class ImageProcessor:
 
         return result
 
+    @classmethod
+    def prepare_source(cls, image: Image.Image, trim: bool, alpha_threshold: int) -> Image.Image:
+        """Apply EXIF orientation and optional transparent-border trimming."""
+        rgba = ImageOps.exif_transpose(image).convert("RGBA")
+        if trim:
+            rgba = cls.remove_transparent_border(rgba, alpha_threshold=max(1, alpha_threshold))
+        return rgba
+
+    @staticmethod
+    def photo_dimensions(source_size: tuple[int, int], width: int, height: int,
+                         fit: str = "width") -> tuple[int, int]:
+        """Calculate photo grid dimensions without resizing or matching colors."""
+        if width <= 0 or height <= 0:
+            raise ValueError("照片图纸宽度和高度必须大于 0。")
+        source_width, source_height = source_size
+        if fit == "width":
+            return width, max(1, round(width * source_height / source_width))
+        if fit == "height":
+            return max(1, round(height * source_width / source_height)), height
+        if fit == "longest":
+            if source_width >= source_height:
+                return width, max(1, round(width * source_height / source_width))
+            return max(1, round(width * source_width / source_height)), width
+        if fit in {"crop", "contain"}:
+            return width, height
+        raise ValueError("不支持的照片适配方式。")
+
+    @classmethod
+    def resize_photo(cls, image: Image.Image, width: int, height: int,
+                     fit: str = "width", method: str = "lanczos") -> Image.Image:
+        """Resize without distortion, using a centered crop or transparent padding as needed."""
+        size = cls.photo_dimensions(image.size, width, height, fit)
+        resampling = cls._get_resampling(method)
+        if fit == "crop":
+            return ImageOps.fit(image, size, method=resampling, centering=(0.5, 0.5))
+        if fit == "contain":
+            return ImageOps.pad(image, size, method=resampling, color=(0, 0, 0, 0), centering=(0.5, 0.5))
+        return image.resize(size, resampling)
+
     def process(
         self,
         image: Image.Image,
@@ -279,20 +318,20 @@ class ImageProcessor:
         height: int | None = None,
         target_beads: int = 850,
         alpha_threshold: int = 128,
+        photo_fit: str = "width",
     ) -> Image.Image:
         """Apply EXIF orientation, optional transparent-border cropping, and resizing.
 
     width sets the width or longest side; height sets the target height.
     collection mode uses target_beads. Disabling keep_ratio in width mode
-    requires a positive height."""
+    requires a positive height. Photo mode uses photo_fit for aspect ratio,
+    centered cropping, or transparent padding."""
 
-        rgba = ImageOps.exif_transpose(image).convert("RGBA")
+        rgba = self.prepare_source(image, trim, alpha_threshold)
 
-        if trim:
-            rgba = self.remove_transparent_border(
-                rgba,
-                alpha_threshold=max(1, alpha_threshold),
-            )
+        if size_mode == "photo":
+            return self.resize_photo(rgba, width, height if height is not None else width,
+                                     fit=photo_fit, method=method)
 
         if size_mode == "collection":
             return self.resize_for_collection(
@@ -342,5 +381,5 @@ class ImageProcessor:
 
         raise ValueError(
             f"未知 size_mode：{size_mode}。"
-            "可选值：width、height、longest、collection。"
+            "可选值：width、height、longest、collection、photo。"
         )

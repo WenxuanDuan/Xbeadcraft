@@ -6,6 +6,25 @@ from string import Formatter
 
 
 ENGLISH = {
+    "照片模式": "Photo mode",
+    "小型 · 最长边 40 颗": "Small · longest side 40",
+    "标准 · 最长边 80 颗": "Standard · longest side 80",
+    "精细 · 最长边 120 颗": "Detailed · longest side 120",
+    "大型 · 最长边 160 颗": "Large · longest side 160",
+    "自定义宽高": "Custom width and height",
+    "照片规格：": "Photo size:",
+    "图纸宽度：": "Grid width:",
+    "图纸高度：": "Grid height:",
+    "保持比例（按宽度）": "Keep ratio (set width)",
+    "保持比例（按高度）": "Keep ratio (set height)",
+    "裁剪填满": "Crop to fill",
+    "留白完整显示": "Fit with empty borders",
+    "画面适配：": "Image fit:",
+    "选择图片后显示预计尺寸；宽高单位为颗。": "Choose an image for a size estimate. Dimensions are in beads.",
+    "预计 {width} × {height} 格，最多 {count} 颗；透明或留白不计入实际用量。": "Estimated {width} × {height} cells, up to {count} beads. Transparent or empty areas are excluded from actual usage.",
+    "照片图纸宽度和高度必须大于 0。": "Photo grid width and height must be greater than zero.",
+    "不支持的照片适配方式。": "Unsupported photo fit mode.",
+
     "界面语言：": "Language:",
     "界面语言已更新": "Interface language updated",
     "语言切换失败": "Language change failed",
@@ -101,7 +120,7 @@ ENGLISH = {
     "x 坐标超出范围：{value}，有效范围为 0 到 {limit}。": "x coordinate out of range: {value}; valid range is 0 to {limit}.",
     "y 坐标超出范围：{value}，有效范围为 0 到 {limit}。": "y coordinate out of range: {value}; valid range is 0 to {limit}.",
     "不支持的缩放算法：{method}。可选值：{options}": "Unsupported resizing method: {method}. Available methods: {options}",
-    "未知 size_mode：{mode}。可选值：width、height、longest、collection。": "Unknown size_mode: {mode}. Choose width, height, longest, or collection.",
+    "未知 size_mode：{mode}。可选值：width、height、longest、collection、photo。": "Unknown size_mode: {mode}. Choose width, height, longest, collection, or photo.",
 }
 
 

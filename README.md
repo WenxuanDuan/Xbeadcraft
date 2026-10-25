@@ -12,6 +12,7 @@ XXBeadPattern is a desktop tool built around the **MARD 221-color palette**. Imp
 | --- | --- |
 | Image-to-pattern conversion | Import PNG, JPG, JPEG, or WEBP and automatically match colors to MARD 221 |
 | Collection sizing | Aim for a similar bead count across characters with different shapes |
+| Photo sizing | Choose a 40 / 80 / 120 / 160-bead longest side, or set custom dimensions with crop or padding |
 | Custom dimensions | Set the width, height, or longest side in bead cells |
 | Transparent backgrounds | Trim transparent borders, adjust the alpha threshold, and show empty cells as a checkerboard |
 | Readable bead grids | Show MARD codes, optional coordinates on all four sides, and configurable major grid lines |
@@ -56,12 +57,29 @@ Click **Choose image**, then choose a sizing mode:
 | Mode | Best for |
 | --- | --- |
 | Collection (recommended) | A set of characters with similar bead counts |
+| Photo mode | A photo with a chosen grid size, using a preset or custom dimensions |
 | Fixed longest side | Keeping the pattern within a chosen maximum side length |
 | Fixed width / Fixed height | Fitting a known horizontal or vertical dimension |
 
 Collection presets target approximately **550, 850, or 1,200 beads**. Actual counts depend on the silhouette, transparency, and size limits; use the generated sheet's count as your reference.
 
 Adjust cell size, major grid spacing, transparency threshold, and background or coordinate options as needed. Click **Generate pattern** to apply generation settings.
+
+**Photo mode**
+
+Choose **Photo mode** under **Sizing mode**, then select a preset:
+
+| Preset | Longest side |
+| --- | --- |
+| Small | 40 beads |
+| Standard | 80 beads |
+| Detailed | 120 beads |
+| Large | 160 beads |
+| Custom width and height | Set dimensions in bead cells |
+
+Presets preserve the original aspect ratio: a 4:3 photo becomes an **80 × 60** grid with the Standard preset. For custom sizing, choose **Keep ratio (set width)** or **Keep ratio (set height)** to calculate the other side automatically, **Crop to fill** for a centered crop, or **Fit with empty borders** to keep the complete image with transparent padding. Images are never stretched in Photo mode.
+
+Editable custom dimensions range from 1 to 200 beads per side; with aspect ratio locking, the other side is calculated from the image. The estimate shows final grid dimensions and maximum bead count before generation. Transparent and padded cells are excluded from actual bead usage. Border trimming and EXIF orientation are applied consistently to the estimate and generated pattern.
 
 ### 2. Refine the colors
 
@@ -114,7 +132,7 @@ With the virtual environment activated, run:
 python -m unittest discover -s tests -v
 ```
 
-Tests cover mirroring, cell selection, individual and bulk color edits, undo, legend sorting, language switching and persistence, preservation of editing state, and PNG export consistency. Code comments and docstrings are written in English. This README keeps the complete English guide first and the complete Chinese guide below.
+Tests cover photo sizing, crop and padding, size estimates, mirroring, cell selection, individual and bulk color edits, undo, legend sorting, language switching and persistence, preservation of editing state, and PNG export consistency. Code comments and docstrings are written in English. This README keeps the complete English guide first and the complete Chinese guide below.
 
 ---
 
@@ -130,6 +148,7 @@ XXBeadPattern 是一款基于 **MARD 221 色卡**的拼豆图纸桌面工具。�
 | --- | --- |
 | 图片转图纸 | 支持 PNG、JPG、JPEG、WEBP，自动匹配 MARD 221 色 |
 | 图鉴模式 | 按目标豆子数量调整尺寸，让不同造型的角色使用接近的豆子数量 |
+| 照片尺寸 | 提供最长边 40／80／120／160 颗预设，以及自定义宽高、裁剪或留白 |
 | 自定义尺寸 | 按宽度、高度或最长边设置目标尺寸 |
 | 透明背景处理 | 裁掉透明边缘、调整透明阈值，并用棋盘格显示空白区域 |
 | 清晰的摆豆参考 | 显示 MARD 色号、可选的四边坐标及可调整间隔的粗分隔线 |
@@ -174,12 +193,29 @@ python app.py
 | 模式 | 适合的情况 |
 | --- | --- |
 | 图鉴模式 | 为一组角色制作豆子数量接近的作品 |
+| 照片模式 | 按预设或自定义网格尺寸制作照片图纸 |
 | 固定最长边 | 将图案控制在指定的最大边长内 |
 | 固定宽度 / 固定高度 | 已确定作品的横向或纵向尺寸 |
 
 图鉴提供三档规格：**约 550 颗、850 颗和 1,200 颗**。实际用量随轮廓、透明区域和尺寸限制变化，以生成结果为准。
 
 按需要调整格子大小、粗线间隔、透明阈值，以及背景和坐标的显示方式，再点击「生成图纸」应用设置。
+
+**照片模式**
+
+在「尺寸模式」中选择「照片模式」，再选择规格：
+
+| 规格 | 最长边 |
+| --- | --- |
+| 小型 | 40 颗 |
+| 标准 | 80 颗 |
+| 精细 | 120 颗 |
+| 大型 | 160 颗 |
+| 自定义宽高 | 按颗数输入网格尺寸 |
+
+预设保持原图比例，例如 4:3 照片选择标准规格会生成 **80 × 60 格**。自定义时，可选择「保持比例（按宽度）」或「保持比例（按高度）」自动计算另一边；选择「裁剪填满」会居中裁剪，「留白完整显示」则保留完整画面并补透明空白。照片模式不会拉伸图像。
+
+自定义可编辑尺寸范围为每边 1–200 颗；保持比例时，另一边按图片比例自动计算。生成前显示最终网格宽高和最多需要的豆子数量，实际用量不包含透明和留白格。尺寸预估与生成过程均使用相同的透明边缘裁剪和图片方向处理。
 
 **2. 调整配色**
 
@@ -232,4 +268,4 @@ AGENTS.md               项目命名与语言约定
 python -m unittest discover -s tests -v
 ```
 
-测试覆盖水平镜像、选格、局部与批量换色、撤销、图例排序、语言切换与记忆、编辑状态保留及 PNG 导出一致性。代码注释和文档字符串统一使用英文；README 先完整英文、后完整中文，项目约定保存在 [`AGENTS.md`](AGENTS.md)。
+测试覆盖照片尺寸、裁剪与留白、尺寸预估、水平镜像、选格、局部与批量换色、撤销、图例排序、语言切换与记忆、编辑状态保留及 PNG 导出一致性。代码注释和文档字符串统一使用英文；README 先完整英文、后完整中文，项目约定保存在 [`AGENTS.md`](AGENTS.md)。
