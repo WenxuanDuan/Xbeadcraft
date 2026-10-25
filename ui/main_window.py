@@ -271,6 +271,13 @@ class MainWindow(QMainWindow):
         generate_button.clicked.connect(self.generate_sheet)
         layout.addWidget(generate_button)
 
+        layout.addWidget(QLabel("图例排序："))
+        self.legend_sort_combo = QComboBox()
+        self.legend_sort_combo.addItem("豆子数量：从多到少", "count")
+        self.legend_sort_combo.addItem("颜色系列：A–M（色号升序）", "series")
+        self.legend_sort_combo.currentIndexChanged.connect(self._change_legend_sort)
+        layout.addWidget(self.legend_sort_combo)
+
         self.mirror_check = QCheckBox("水平镜像")
         self.mirror_check.setEnabled(False)
         self.mirror_check.toggled.connect(self._toggle_mirror)
@@ -465,6 +472,7 @@ class MainWindow(QMainWindow):
             pattern.title = self.source_path.stem
 
             config = RenderConfig(
+                legend_sort=self.legend_sort_combo.currentData(),
                 cell_size=self.cell_size_spin.value(),
                 show_color=(
                     self.show_color_check.isChecked()
@@ -526,6 +534,23 @@ class MainWindow(QMainWindow):
         self.sheet_image = image
         self.sheet_pixmap = pixmap
         self._refresh_source_colors(pattern)
+
+    def _change_legend_sort(self) -> None:
+        if self.pattern is None or self.render_config is None:
+            return
+        config = replace(self.render_config, legend_sort=self.legend_sort_combo.currentData())
+        try:
+            self._display_sheet(self.pattern, config)
+        except Exception as exc:
+            self.legend_sort_combo.blockSignals(True)
+            self.legend_sort_combo.setCurrentIndex(
+                self.legend_sort_combo.findData(self.render_config.legend_sort)
+            )
+            self.legend_sort_combo.blockSignals(False)
+            QMessageBox.critical(self, "图例排序失败", str(exc))
+            return
+        self.render_config = config
+        self.statusBar().showMessage("图例排序已更新")
 
     def _toggle_mirror(self, checked: bool) -> None:
         if self.pattern is None or self.render_config is None:

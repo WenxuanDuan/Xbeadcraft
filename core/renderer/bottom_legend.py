@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -68,6 +69,7 @@ def _build_chips(
     draw: ImageDraw.ImageDraw,
     font: ImageFont.ImageFont,
     chip_height: int,
+    sort_mode: str = "count",
 ) -> list[LegendChip]:
     """
     根据 Pattern 图例生成自适应宽度的 Chip。
@@ -123,6 +125,21 @@ def _build_chips(
                 width=chip_width,
             )
         )
+
+    def series_key(chip: LegendChip):
+        color = pattern.palette[chip.palette_index]
+        match = re.fullmatch(r"([A-Za-z]+)([0-9]+)", chip.code.strip())
+        series = str(color.series).strip().upper()
+        if match:
+            return (series or match[1].upper(), int(match[2]), chip.code)
+        return (series, 0, chip.code)
+
+    if sort_mode == "series":
+        chips.sort(key=series_key)
+    elif sort_mode == "count":
+        chips.sort(key=lambda chip: (-chip.count, series_key(chip)))
+    else:
+        raise ValueError(f"不支持的图例排序方式：{sort_mode}")
 
     return chips
 
@@ -352,6 +369,7 @@ def render_bottom_legend(
         draw=temporary_draw,
         font=font,
         chip_height=chip_height,
+        sort_mode=config.legend_sort,
     )
 
     if not chips:

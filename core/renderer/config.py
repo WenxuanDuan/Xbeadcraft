@@ -36,3 +36,6 @@ class RenderConfig:
 
     # 只水平镜像拼豆位置，文字、坐标和图例保持正常方向
     mirror_horizontal: bool = False
+
+    # count：用量降序；series：系列及色号数字升序
+    legend_sort: str = "count"
