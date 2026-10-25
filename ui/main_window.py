@@ -4,7 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from PIL import Image
-from PySide6.QtCore import Qt, QRect
+from PySide6.QtCore import Qt, QRect, QSettings, QTranslator, QLibraryInfo
 from PySide6.QtGui import QAction, QColor, QIcon, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -29,6 +29,7 @@ from core.image_processor import ImageProcessor
 from core.palette import Palette
 from core.pattern import Pattern
 from core.renderer import RenderConfig, render_sheet
+from core.i18n import translate, translate_error
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -39,7 +40,7 @@ class PatternPreview(QLabel):
     """Selection is painted as an overlay, never into the exported sheet."""
 
     def __init__(self, window):
-        super().__init__("请选择一张图片，然后点击“生成图纸”。")
+        super().__init__(window._tr("请选择一张图片，然后点击“生成图纸”。"))
         self.window = window
 
     def mousePressEvent(self, event):
@@ -64,8 +65,14 @@ class PatternPreview(QLabel):
 class MainWindow(QMainWindow):
     """Main desktop window for XXBeadPattern: generation, editing, and PNG export."""
 
-    def __init__(self) -> None:
+    def __init__(self, language: str | None = None, settings: QSettings | None = None) -> None:
         super().__init__()
+        self.settings = settings if settings is not None else QSettings("XXBeadPattern", "XXBeadPattern")
+        saved_language = language if language is not None else self.settings.value("language", "zh")
+        self.language = saved_language if saved_language in {"zh", "en"} else "zh"
+        self._text_bindings = []
+        self._combo_bindings = []
+        self._qt_translator = None
 
         self.selected_cells: set[tuple[int, int]] = set()
         self.edit_history: list[dict[tuple[int, int], int]] = []
@@ -85,29 +92,103 @@ class MainWindow(QMainWindow):
         self._build_menu()
         self._build_ui()
         self._build_status_bar()
+        self._retranslate_ui()
+        self._install_qt_translation()
+
+    def _tr(self, text: str, **values) -> str:
+        return translate(self.language, text, **values)
+
+    def _text_widget(self, widget_type, text: str, *args):
+        widget = widget_type(self._tr(text), *args)
+        self._text_bindings.append((widget, text))
+        return widget
+
+    def _add_item(self, combo: QComboBox, text: str, data) -> None:
+        index = combo.count()
+        combo.addItem(self._tr(text), data)
+        self._combo_bindings.append((combo, index, text))
+
+    def _add_menu(self, menu_bar, text: str):
+        menu = menu_bar.addMenu(self._tr(text))
+        self._text_bindings.append((menu.menuAction(), text))
+        return menu
+
+    def _install_qt_translation(self) -> None:
+        from PySide6.QtWidgets import QApplication
+
+        app = QApplication.instance()
+        if self._qt_translator is not None:
+            app.removeTranslator(self._qt_translator)
+            self._qt_translator = None
+        if self.language == "zh":
+            translator = QTranslator(self)
+            if translator.load("qtbase_zh_CN", QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)):
+                app.installTranslator(translator)
+                self._qt_translator = translator
+
+    def _retranslate_ui(self) -> None:
+        for widget, text in self._text_bindings:
+            if widget is self.file_label and self.source_path is not None:
+                continue
+            widget.setText(self._tr(text))
+        for combo, index, text in self._combo_bindings:
+            combo.blockSignals(True)
+            combo.setItemText(index, self._tr(text))
+            combo.blockSignals(False)
+        self.control_panel.setFixedWidth(360 if self.language == "en" else 310)
+        self.control_scroll.setFixedWidth(385 if self.language == "en" else 335)
+        self.major_grid_spin.setSuffix(self._tr(" 格"))
+        self._update_size_controls()
+        self._update_selection()
+        self.palette_info.setText(self._tr("色卡：MARD\n已加载颜色：{count}", count=len(self.palette)))
+        if self.pattern is not None:
+            self._refresh_source_colors(self.pattern)
+        if self.sheet_image is None:
+            self.preview_label.setText(self._tr("请选择一张图片，然后点击“生成图纸”。"))
+
+    def _change_language(self) -> None:
+        language = self.language_combo.currentData()
+        if language not in {"zh", "en"} or language == self.language:
+            return
+        previous = self.language
+        self.language = language
+        if self.pattern is not None and self.render_config is not None:
+            config = replace(self.render_config, language=language)
+            try:
+                self._display_sheet(self.pattern, config)
+            except Exception as exc:
+                self.language = previous
+                self.language_combo.blockSignals(True)
+                self.language_combo.setCurrentIndex(self.language_combo.findData(previous))
+                self.language_combo.blockSignals(False)
+                QMessageBox.critical(self, self._tr("语言切换失败"), translate_error(self.language, str(exc)))
+                return
+            self.render_config = config
+        self._retranslate_ui()
+        self._install_qt_translation()
+        self.settings.setValue("language", language)
+        self.statusBar().showMessage(self._tr("界面语言已更新"))
 
     def _load_palette(self) -> Palette:
         if not PALETTE_PATH.exists():
             raise FileNotFoundError(
-                "找不到 MARD 色卡文件：\n"
-                f"{PALETTE_PATH}\n\n"
-                "请将色卡保存为 data/mard_221.csv。"
+                self._tr('找不到 MARD 色卡文件：\n{value0}\n\n请将色卡保存为 data/mard_221.csv。', value0=PALETTE_PATH)
             )
 
         return Palette(str(PALETTE_PATH))
 
     def _build_menu(self) -> None:
-        file_menu = self.menuBar().addMenu("文件")
+        file_menu = self._add_menu(self.menuBar(), '文件')
 
-        open_action = QAction("打开图片…", self)
+        open_action = self._text_widget(QAction, '打开图片…', self)
         open_action.setShortcut("Ctrl+O")
         open_action.triggered.connect(self.open_image)
 
-        save_action = QAction("保存图纸…", self)
+        save_action = self._text_widget(QAction, '保存图纸…', self)
         save_action.setShortcut("Ctrl+S")
         save_action.triggered.connect(self.save_sheet)
 
-        quit_action = QAction("退出", self)
+        quit_action = self._text_widget(QAction, '退出', self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
 
@@ -129,6 +210,7 @@ class MainWindow(QMainWindow):
 
         control_scroll = QScrollArea()
         control_scroll.setWidgetResizable(True)
+        self.control_scroll = control_scroll
         control_scroll.setFixedWidth(335)
         control_scroll.setWidget(controls)
         root_layout.addWidget(control_scroll)
@@ -137,20 +219,21 @@ class MainWindow(QMainWindow):
     def _create_control_panel(self) -> QWidget:
         panel = QFrame()
         panel.setFrameShape(QFrame.Shape.StyledPanel)
+        self.control_panel = panel
         panel.setFixedWidth(310)
 
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(13)
 
-        title = QLabel("图纸设置")
+        title = self._text_widget(QLabel, '图纸设置')
         title.setStyleSheet(
             "font-size: 20px;"
             "font-weight: 600;"
         )
         layout.addWidget(title)
 
-        self.file_label = QLabel("尚未选择图片")
+        self.file_label = self._text_widget(QLabel, '尚未选择图片')
         self.file_label.setWordWrap(True)
         self.file_label.setStyleSheet(
             "color: #666666;"
@@ -160,99 +243,86 @@ class MainWindow(QMainWindow):
         )
         layout.addWidget(self.file_label)
 
-        open_button = QPushButton("选择图片")
+        open_button = self._text_widget(QPushButton, '选择图片')
         open_button.clicked.connect(self.open_image)
         layout.addWidget(open_button)
+
+        language_row = QHBoxLayout()
+        language_row.addWidget(self._text_widget(QLabel, "界面语言："))
+        self.language_combo = QComboBox()
+        self.language_combo.addItem("中文", "zh")
+        self.language_combo.addItem("English", "en")
+        self.language_combo.setCurrentIndex(self.language_combo.findData(self.language))
+        self.language_combo.currentIndexChanged.connect(self._change_language)
+        language_row.addWidget(self.language_combo)
+        layout.addLayout(language_row)
 
         form = QFormLayout()
         form.setVerticalSpacing(12)
 
         self.size_mode_combo = QComboBox()
-        self.size_mode_combo.addItem(
-            "图鉴模式（推荐）",
-            "collection",
-        )
-        self.size_mode_combo.addItem(
-            "固定最长边",
-            "longest",
-        )
-        self.size_mode_combo.addItem(
-            "固定宽度",
-            "width",
-        )
-        self.size_mode_combo.addItem(
-            "固定高度",
-            "height",
-        )
+        self._add_item(self.size_mode_combo, '图鉴模式（推荐）', "collection")
+        self._add_item(self.size_mode_combo, '固定最长边', "longest")
+        self._add_item(self.size_mode_combo, '固定宽度', "width")
+        self._add_item(self.size_mode_combo, '固定高度', "height")
         self.size_mode_combo.currentIndexChanged.connect(
             self._update_size_controls
         )
-        form.addRow("尺寸模式：", self.size_mode_combo)
+        form.addRow(self._text_widget(QLabel, '尺寸模式：'), self.size_mode_combo)
 
         self.collection_size_combo = QComboBox()
-        self.collection_size_combo.addItem(
-            "小型图鉴 · 约550颗",
-            550,
-        )
-        self.collection_size_combo.addItem(
-            "标准图鉴 · 约850颗",
-            850,
-        )
-        self.collection_size_combo.addItem(
-            "大型图鉴 · 约1200颗",
-            1200,
-        )
+        self._add_item(self.collection_size_combo, '小型图鉴 · 约550颗', 550)
+        self._add_item(self.collection_size_combo, '标准图鉴 · 约850颗', 850)
+        self._add_item(self.collection_size_combo, '大型图鉴 · 约1200颗', 1200)
         self.collection_size_combo.setCurrentIndex(1)
-        form.addRow("图鉴规格：", self.collection_size_combo)
+        form.addRow(self._text_widget(QLabel, '图鉴规格：'), self.collection_size_combo)
 
         self.target_size_spin = QSpinBox()
         self.target_size_spin.setRange(4, 200)
         self.target_size_spin.setValue(40)
-        self.target_size_spin.setSuffix(" 颗")
-        form.addRow("目标尺寸：", self.target_size_spin)
+        self.target_size_spin.setSuffix(self._tr(' 颗'))
+        form.addRow(self._text_widget(QLabel, '目标尺寸：'), self.target_size_spin)
 
         self.cell_size_spin = QSpinBox()
         self.cell_size_spin.setRange(18, 60)
         self.cell_size_spin.setValue(30)
         self.cell_size_spin.setSuffix(" px")
-        form.addRow("格子大小：", self.cell_size_spin)
+        form.addRow(self._text_widget(QLabel, '格子大小：'), self.cell_size_spin)
 
         self.major_grid_spin = QSpinBox()
         self.major_grid_spin.setRange(1, 20)
         self.major_grid_spin.setValue(5)
-        self.major_grid_spin.setSuffix(" 格")
-        form.addRow("粗线间隔：", self.major_grid_spin)
+        self.major_grid_spin.setSuffix(self._tr(' 格'))
+        form.addRow(self._text_widget(QLabel, '粗线间隔：'), self.major_grid_spin)
 
         self.alpha_spin = QSpinBox()
         self.alpha_spin.setRange(0, 255)
         self.alpha_spin.setValue(128)
-        form.addRow("透明阈值：", self.alpha_spin)
+        form.addRow(self._text_widget(QLabel, '透明阈值：'), self.alpha_spin)
 
         layout.addLayout(form)
 
-        self.keep_ratio_check = QCheckBox("保持原图比例")
+        self.keep_ratio_check = self._text_widget(QCheckBox, '保持原图比例')
         self.keep_ratio_check.setChecked(True)
         layout.addWidget(self.keep_ratio_check)
 
-        self.trim_check = QCheckBox("裁掉透明边缘")
+        self.trim_check = self._text_widget(QCheckBox, '裁掉透明边缘')
         self.trim_check.setChecked(True)
         layout.addWidget(self.trim_check)
 
-        self.show_color_check = QCheckBox("显示颜色背景")
+        self.show_color_check = self._text_widget(QCheckBox, '显示颜色背景')
         self.show_color_check.setChecked(True)
         layout.addWidget(self.show_color_check)
 
-        self.coordinate_check = QCheckBox("显示四边坐标")
+        self.coordinate_check = self._text_widget(QCheckBox, '显示四边坐标')
         self.coordinate_check.setChecked(True)
         layout.addWidget(self.coordinate_check)
 
-        self.checkerboard_check = QCheckBox(
-            "透明区域显示棋盘格"
-        )
+        self.checkerboard_check = self._text_widget(QCheckBox, '透明区域显示棋盘格')
         self.checkerboard_check.setChecked(True)
         layout.addWidget(self.checkerboard_check)
 
-        generate_button = QPushButton("生成图纸")
+        generate_button = self._text_widget(QPushButton, '生成图纸')
         generate_button.setMinimumHeight(42)
         generate_button.setStyleSheet(
             "font-size: 16px;"
@@ -261,34 +331,34 @@ class MainWindow(QMainWindow):
         generate_button.clicked.connect(self.generate_sheet)
         layout.addWidget(generate_button)
 
-        layout.addWidget(QLabel("图例排序："))
+        layout.addWidget(self._text_widget(QLabel, '图例排序：'))
         self.legend_sort_combo = QComboBox()
-        self.legend_sort_combo.addItem("豆子数量：从多到少", "count")
-        self.legend_sort_combo.addItem("颜色系列：A–M（色号升序）", "series")
+        self._add_item(self.legend_sort_combo, '豆子数量：从多到少', "count")
+        self._add_item(self.legend_sort_combo, '颜色系列：A–M（色号升序）', "series")
         self.legend_sort_combo.currentIndexChanged.connect(self._change_legend_sort)
         layout.addWidget(self.legend_sort_combo)
 
-        self.mirror_check = QCheckBox("水平镜像")
+        self.mirror_check = self._text_widget(QCheckBox, '水平镜像')
         self.mirror_check.setEnabled(False)
         self.mirror_check.toggled.connect(self._toggle_mirror)
         layout.addWidget(self.mirror_check)
 
-        self.save_button = QPushButton("保存 PNG")
+        self.save_button = self._text_widget(QPushButton, '保存 PNG')
         self.save_button.setMinimumHeight(38)
         self.save_button.setEnabled(False)
         self.save_button.clicked.connect(self.save_sheet)
         layout.addWidget(self.save_button)
 
-        self.selection_label = QLabel("点击图纸选格；按住 Ctrl / ⌘ 可多选")
+        self.selection_label = self._text_widget(QLabel, '点击图纸选格；按住 Ctrl / ⌘ 可多选')
         self.selection_label.setWordWrap(True)
         layout.addWidget(self.selection_label)
 
-        layout.addWidget(QLabel("按色号全选（当前图纸）："))
+        layout.addWidget(self._text_widget(QLabel, '按色号全选（当前图纸）：'))
         self.source_color_combo = QComboBox()
         self.source_color_combo.setEnabled(False)
         layout.addWidget(self.source_color_combo)
 
-        self.select_color_button = QPushButton("全选此色号")
+        self.select_color_button = self._text_widget(QPushButton, '全选此色号')
         self.select_color_button.setEnabled(False)
         self.select_color_button.clicked.connect(self.select_all_of_color)
         layout.addWidget(self.select_color_button)
@@ -299,29 +369,28 @@ class MainWindow(QMainWindow):
             swatch.fill(QColor(*color.rgb))
             self.color_combo.addItem(QIcon(swatch), color.code, index)
         self.color_combo.setEnabled(False)
-        layout.addWidget(QLabel("替换颜色（MARD 221）："))
+        layout.addWidget(self._text_widget(QLabel, '替换颜色（MARD 221）：'))
         layout.addWidget(self.color_combo)
 
-        self.replace_button = QPushButton("替换选中像素")
+        self.replace_button = self._text_widget(QPushButton, '替换选中像素')
         self.replace_button.setEnabled(False)
         self.replace_button.clicked.connect(self.replace_selected_cells)
         layout.addWidget(self.replace_button)
 
-        self.clear_selection_button = QPushButton("清除选择")
+        self.clear_selection_button = self._text_widget(QPushButton, '清除选择')
         self.clear_selection_button.setEnabled(False)
         self.clear_selection_button.clicked.connect(self._clear_selection)
         layout.addWidget(self.clear_selection_button)
 
-        self.undo_button = QPushButton("撤销换色")
+        self.undo_button = self._text_widget(QPushButton, '撤销换色')
         self.undo_button.setEnabled(False)
         self.undo_button.clicked.connect(self.undo_color_edit)
         layout.addWidget(self.undo_button)
 
         layout.addStretch()
 
-        palette_info = QLabel(
-            f"色卡：MARD\n"
-            f"已加载颜色：{len(self.palette)}"
+        self.palette_info = palette_info = QLabel(
+            self._tr('色卡：MARD\n已加载颜色：{value0}', value0=len(self.palette))
         )
         palette_info.setStyleSheet(
             "color: #777777;"
@@ -363,7 +432,7 @@ class MainWindow(QMainWindow):
     def _build_status_bar(self) -> None:
         status_bar = QStatusBar()
         self.setStatusBar(status_bar)
-        self.statusBar().showMessage("准备就绪")
+        self.statusBar().showMessage(self._tr('准备就绪'))
 
     def _update_size_controls(self) -> None:
         mode = self.size_mode_combo.currentData()
@@ -378,27 +447,24 @@ class MainWindow(QMainWindow):
         )
 
         if mode == "width":
-            self.target_size_spin.setSuffix(" 颗宽")
+            self.target_size_spin.setSuffix(self._tr(' 颗宽'))
 
         elif mode == "height":
-            self.target_size_spin.setSuffix(" 颗高")
+            self.target_size_spin.setSuffix(self._tr(' 颗高'))
 
         elif mode == "longest":
-            self.target_size_spin.setSuffix(" 颗最长边")
+            self.target_size_spin.setSuffix(self._tr(' 颗最长边'))
 
         else:
-            self.target_size_spin.setSuffix(" 颗")
+            self.target_size_spin.setSuffix(self._tr(' 颗'))
 
     def open_image(self) -> None:
         filename, _ = QFileDialog.getOpenFileName(
             self,
-            "选择图片",
+            self._tr('选择图片'),
             str(PROJECT_ROOT),
-            (
-                "图片文件 (*.png *.jpg *.jpeg *.webp);;"
-                "PNG 图片 (*.png);;"
-                "所有文件 (*)"
-            ),
+            self._tr('图片文件 (*.png *.jpg *.jpeg *.webp);;PNG 图片 (*.png);;所有文件 (*)'),
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
 
         if not filename:
@@ -408,21 +474,21 @@ class MainWindow(QMainWindow):
         self.file_label.setText(self.source_path.name)
 
         self.statusBar().showMessage(
-            f"已选择：{self.source_path.name}"
+            self._tr('已选择：{value0}', value0=self.source_path.name)
         )
 
     def generate_sheet(self) -> None:
         if self.source_path is None:
             QMessageBox.information(
                 self,
-                "尚未选择图片",
-                "请先选择一张图片。",
+                self._tr('尚未选择图片'),
+                self._tr('请先选择一张图片。'),
             )
             return
 
         try:
             self.statusBar().showMessage(
-                "正在生成图纸…"
+                self._tr('正在生成图纸…')
             )
 
             size_mode = str(
@@ -462,6 +528,7 @@ class MainWindow(QMainWindow):
             pattern.title = self.source_path.stem
 
             config = RenderConfig(
+                language=self.language,
                 legend_sort=self.legend_sort_combo.currentData(),
                 cell_size=self.cell_size_spin.value(),
                 show_color=(
@@ -496,21 +563,17 @@ class MainWindow(QMainWindow):
             )
 
             self.statusBar().showMessage(
-                f"生成完成｜"
-                f"{mode_label}｜"
-                f"{pattern.width} × {pattern.height}｜"
-                f"{pattern.bead_count} 颗｜"
-                f"{pattern.color_count} 种颜色"
+                self._tr('生成完成｜{value0}｜{value1} × {value2}｜{value3} 颗｜{value4} 种颜色', value0=mode_label, value1=pattern.width, value2=pattern.height, value3=pattern.bead_count, value4=pattern.color_count)
             )
 
         except Exception as exc:
             QMessageBox.critical(
                 self,
-                "生成失败",
-                str(exc),
+                self._tr('生成失败'),
+                translate_error(self.language, str(exc)),
             )
             self.statusBar().showMessage(
-                "生成失败"
+                self._tr('生成失败')
             )
 
     def _display_sheet(self, pattern: Pattern, config: RenderConfig) -> None:
@@ -537,10 +600,10 @@ class MainWindow(QMainWindow):
                 self.legend_sort_combo.findData(self.render_config.legend_sort)
             )
             self.legend_sort_combo.blockSignals(False)
-            QMessageBox.critical(self, "图例排序失败", str(exc))
+            QMessageBox.critical(self, self._tr('图例排序失败'), translate_error(self.language, str(exc)))
             return
         self.render_config = config
-        self.statusBar().showMessage("图例排序已更新")
+        self.statusBar().showMessage(self._tr('图例排序已更新'))
 
     def _toggle_mirror(self, checked: bool) -> None:
         if self.pattern is None or self.render_config is None:
@@ -553,12 +616,12 @@ class MainWindow(QMainWindow):
             self.mirror_check.blockSignals(True)
             self.mirror_check.setChecked(self.render_config.mirror_horizontal)
             self.mirror_check.blockSignals(False)
-            QMessageBox.critical(self, "镜像切换失败", str(exc))
+            QMessageBox.critical(self, self._tr('镜像切换失败'), translate_error(self.language, str(exc)))
             return
 
         self.render_config = config
         self.statusBar().showMessage(
-            "已切换为水平镜像" if checked else "已恢复正常方向"
+            self._tr('已切换为水平镜像') if checked else self._tr('已恢复正常方向')
         )
 
     def _refresh_source_colors(self, pattern: Pattern) -> None:
@@ -570,7 +633,7 @@ class MainWindow(QMainWindow):
             swatch = QPixmap(20, 20)
             swatch.fill(QColor(*color.rgb))
             self.source_color_combo.addItem(
-                QIcon(swatch), f"{color.code} · {int(row.count)} 颗", index
+                QIcon(swatch), self._tr('{value0} · {value1} 颗', value0=color.code, value1=int(row.count)), index
             )
         position = self.source_color_combo.findData(previous)
         if position >= 0:
@@ -589,7 +652,7 @@ class MainWindow(QMainWindow):
         self.selected_cells = {(int(x), int(y)) for y, x in zip(rows, columns)}
         self._update_selection()
         self.statusBar().showMessage(
-            f"已全选 {self.palette[index].code}：{len(self.selected_cells)} 格，请选择目标色号并替换"
+            self._tr('已全选 {value0}：{value1} 格，请选择目标色号并替换', value0=self.palette[index].code, value1=len(self.selected_cells))
         )
 
     def _grid_geometry(self) -> tuple[int, int, int]:
@@ -626,8 +689,8 @@ class MainWindow(QMainWindow):
     def _update_selection(self) -> None:
         count = len(self.selected_cells)
         self.selection_label.setText(
-            f"已选中 {count} 格；按住 Ctrl / ⌘ 可多选" if count
-            else "点击图纸选格；按住 Ctrl / ⌘ 可多选"
+            self._tr('已选中 {value0} 格；按住 Ctrl / ⌘ 可多选', value0=count) if count
+            else self._tr('点击图纸选格；按住 Ctrl / ⌘ 可多选')
         )
         self.replace_button.setEnabled(bool(count))
         self.clear_selection_button.setEnabled(bool(count))
@@ -643,12 +706,12 @@ class MainWindow(QMainWindow):
         try:
             self._display_sheet(candidate, self.render_config)
         except Exception as exc:
-            QMessageBox.critical(self, "换色失败", str(exc))
+            QMessageBox.critical(self, self._tr('换色失败'), translate_error(self.language, str(exc)))
             return False
         self.pattern = candidate
         self.preview_label.update()
         self.statusBar().showMessage(
-            f"图纸已更新｜{candidate.bead_count} 颗｜{candidate.color_count} 种颜色"
+            self._tr('图纸已更新｜{value0} 颗｜{value1} 种颜色', value0=candidate.bead_count, value1=candidate.color_count)
         )
         return True
 
@@ -675,8 +738,8 @@ class MainWindow(QMainWindow):
         if self.sheet_image is None:
             QMessageBox.information(
                 self,
-                "没有可保存的图纸",
-                "请先生成图纸。",
+                self._tr('没有可保存的图纸'),
+                self._tr('请先生成图纸。'),
             )
             return
 
@@ -690,9 +753,10 @@ class MainWindow(QMainWindow):
 
         filename, _ = QFileDialog.getSaveFileName(
             self,
-            "保存图纸",
+            self._tr('保存图纸'),
             str(PROJECT_ROOT / default_name),
-            "PNG 图片 (*.png)",
+            self._tr('PNG 图片 (*.png)'),
+            options=QFileDialog.Option.DontUseNativeDialog,
         )
 
         if not filename:
@@ -712,21 +776,20 @@ class MainWindow(QMainWindow):
             )
 
             self.statusBar().showMessage(
-                f"已保存：{output_path}"
+                self._tr('已保存：{value0}', value0=output_path)
             )
 
             QMessageBox.information(
                 self,
-                "保存成功",
-                f"图纸已经保存到：\n"
-                f"{output_path}",
+                self._tr('保存成功'),
+                self._tr('图纸已经保存到：\n{value0}', value0=output_path),
             )
 
         except Exception as exc:
             QMessageBox.critical(
                 self,
-                "保存失败",
-                str(exc),
+                self._tr('保存失败'),
+                translate_error(self.language, str(exc)),
             )
 
     @staticmethod

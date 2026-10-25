@@ -5,6 +5,7 @@ from PIL import ImageDraw
 from PIL import ImageFont
 
 from core.pattern import Pattern
+from core.i18n import translate
 
 from .config import RenderConfig
 from .grid import render_grid
@@ -15,8 +16,8 @@ def _load_font(size: int) -> ImageFont.ImageFont:
     """Load a system font, falling back to the default Pillow font."""
 
     font_paths = [
-        "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/Library/Fonts/Arial.ttf",
         "Arial.ttf",
     ]
@@ -36,6 +37,7 @@ def _draw_title(
     x: int,
     y: int,
     width: int,
+    language: str = "en",
 ) -> int:
     """Draw the pattern title and usage summary; return the header height."""
 
@@ -45,7 +47,7 @@ def _draw_title(
     title = getattr(pattern, "title", None)
 
     if not title:
-        title = "Untitled Pattern"
+        title = translate(language, "未命名图纸")
 
     draw.text(
         (
@@ -57,12 +59,10 @@ def _draw_title(
         font=title_font,
     )
 
-    info = (
-        f"{pattern.width} × {pattern.height}"
-        f"    "
-        f"{pattern.bead_count} Beads"
-        f"    "
-        f"{pattern.color_count} Colors"
+    info = translate(
+        language, "{width} × {height}    {beads} 颗    {colors} 种颜色",
+        width=pattern.width, height=pattern.height,
+        beads=pattern.bead_count, colors=pattern.color_count,
     )
 
     draw.text(
@@ -180,6 +180,7 @@ def render_sheet(
         padding,
         current_y,
         grid.width,
+        language=config.language,
     )
 
     current_y += spacing

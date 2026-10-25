@@ -23,7 +23,7 @@ class ColorEditTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
-        self.window = MainWindow()
+        self.window = MainWindow(language="zh")
         self.addCleanup(self.window.close)
         self.window.pattern = Pattern(np.array([[0, 1, -1, 2], [1, 2, 0, -1]]), self.window.palette)
         self.window.pattern.title = 'Edit test'
